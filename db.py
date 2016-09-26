@@ -31,8 +31,9 @@ def create_database():
 
 def insert_new_user(telid, first_name, last_name, username):
     conn = connect()
-    new_user = {"id": telid, "first_name": first_name, "last_name": last_name \
-                             , "username": username, "active": True}
+    new_user = {"id": telid, "first_name": first_name, "last_name": last_name,
+                "username": username, "active": True,
+                "score": 0, "followers": [], "level" : 1}
     r.table("USERS").insert(new_user).run(conn)
     conn.close()
 
@@ -89,10 +90,26 @@ def get_users():
     conn.close()
     return x
 
+def follow_or_unfollow_user(u_id, follower_id):
+    # if (u_id == follower_id):
+        # return True
+    conn = connect()
+    user = r.table('USERS').get(u_id).run(conn)
+    followers = set(user['followers'])
+    if follower_id in followers:
+        followers.remove(follower_id)
+    else:
+        followers.add(follower_id)
+    r.table('USERS').get(u_id).update({'followers': list(followers)}).run(conn)
+    conn.close()
+
 def insert_new_question(idd, text, userid, date):
     conn = connect()
     new_question = {"id": str(idd)+'-'+str(userid) ,"msg_id": idd, "question": text, "user_id": userid, 'date': pytz.utc.localize(date), 'followers': [userid], 'answers': []}
     r.table('QUESTIONS').insert(new_question).run(conn)
+    user = r.table('USERS').get(userid)
+    q_numbers = user.run(conn)['q_numbers']+1
+    user.update({'q_numbers': q_numbers }).run(conn)
     conn.close()
 
 def follow_or_unfollow_question(q_id, user_id):
@@ -130,6 +147,10 @@ def get_question_id_by_msgid(msgid):
 def delete_question(q_id):
     conn = connect()
     r.table('QUESTIONS').get(q_id).delete().run(conn)
+    user_id = int(q_id.split('-')[1])
+    user = r.table('USERS').get(user_id)
+    q_numbers = user.run(conn)['q_numbers']-1
+    user.update({'q_numbers': q_numbers }).run(conn)
     conn.close()
 
 def get_last_questions(n, s):
@@ -175,6 +196,9 @@ def push_answer_form_temp_to_answers(user_id):
         r.table('QUESTIONS').get(q_id).update({'answers': list(answers)}).run(conn)
     else:
         r.table('ANSWERS').get(new_id).update(touple).run(conn)
+    user = r.table('USERS').get(user_id)
+    a_numbers = user.run(conn)['a_numbers']+1
+    user.update({'a_numbers': a_numbers }).run(conn)
     conn.close()
     return q_id, new_id
 
@@ -202,6 +226,10 @@ def have_answer(q_id):
 
 def upvote_answer(an_id, user_id):
     conn = connect()
+    writer_id = int(an_id.split("-")[2])
+    user_level = r.table('USERS').get(user_id).run(conn)['level']
+    writer = r.table('USERS').get(writer_id).run(conn)
+    writer_score = writer['score']
     answer = r.table('ANSWERS').get(an_id).run(conn)
     upvoters = set(answer['upvoters'])
     upvotes = answer['upvotes']
@@ -209,19 +237,26 @@ def upvote_answer(an_id, user_id):
     downvotes = answer['downvotes']
     if user_id in downvoters:
         downvoters.remove(user_id)
-        downvotes -= 1
+        downvotes -= user_level
     if user_id in upvoters:
         upvoters.remove(user_id)
-        upvotes -= 1
+        upvotes -= user_level
+        writer_score -= user_level
     else:
         upvoters.add(user_id)
-        upvotes += 1
+        upvotes += user_level
+        writer_score += user_level
+    r.table('USERS').get(writer_id).update({'score': writer_score}).run(conn)
     r.table('ANSWERS').get(an_id).update({'downvotes': downvotes, 'downvoters': list(downvoters), 'upvoters': list(upvoters), 'upvotes': upvotes}).run(conn)
     conn.close()
     return upvotes
 
 def downvote_answer(an_id, user_id):
     conn = connect()
+    writer_id = int(an_id.split("-")[2])
+    user_level = r.table('USERS').get(user_id).run(conn)['level']
+    writer = r.table('USERS').get(writer_id).run(conn)
+    writer_score = writer['score']
     answer = r.table('ANSWERS').get(an_id).run(conn)
     upvoters = set(answer['upvoters'])
     downvoters = set(answer['downvoters'])
@@ -229,13 +264,14 @@ def downvote_answer(an_id, user_id):
     downvotes = answer['downvotes']
     if user_id in upvoters:
         upvoters.remove(user_id)
-        upvotes -= 1
+        upvotes -= user_level
+        writer_score -= user_level
     if user_id in downvoters:
         downvoters.remove(user_id)
-        downvotes -= 1
+        downvotes -= user_level
     else:
         downvoters.add(user_id)
-        downvotes += 1
+        downvotes += user_level
     r.table('ANSWERS').get(an_id).update({'downvotes': downvotes, 'downvoters': list(downvoters), 'upvoters': list(upvoters), 'upvotes': upvotes}).run(conn)
     conn.close()
     return upvotes

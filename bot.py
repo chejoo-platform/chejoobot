@@ -12,6 +12,7 @@ import constants
 import questions
 import answers
 import functions
+import users
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -48,7 +49,7 @@ def stop_this_fucking_bot(bot, update):
 def main_menue_handler(bot, update):
     message = update.message.text
     if (message == 'سوالای اخیر'):
-        questions.show_last_questions(bot,update.message.chat_id,i=0, number = 3 )
+        questions.show_last_questions(bot,update.message.chat_id)
         return constants.STATE_MAIN
     elif (message == '🤔 از چجو بپرس'):
         bot.sendMessage(update.message.chat_id,
@@ -60,7 +61,6 @@ def main_menue_handler(bot, update):
         bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب نمایید', reply_markup=constants.KEYBOARD_MAIN)
 
 def commanhandler(bot, update):
-    print(update)
     chat_id = update.message.chat_id
     command_pre = update.message.text[1]
     command_post = update.message.text[2:]
@@ -70,6 +70,9 @@ def commanhandler(bot, update):
             bot.sendMessage(chat_id=chat_id,text='سوال حذف شده است🤗', reply_markup=constants.KEYBOARD_MAIN)
         else:
             questions.show_question(q_id, chat_id, bot)
+    if (command_pre == 'u'):
+        users.show_user(bot, chat_id, int(command_post))
+    return constants.STATE_MAIN
 
 def error_callback(bot, update, error):
     try:

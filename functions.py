@@ -7,9 +7,12 @@ import constants
 import answers
 import db
 import questions
+import users
+
 def call_handler(bot, update):
     query = update.callback_query
     splited_query = query.data.split("_")
+    print(query)
 
     if (splited_query[0] == 'answer'):
         if (db.get_question(splited_query[1]) == None ):
@@ -60,7 +63,8 @@ def call_handler(bot, update):
                              query.from_user.id,
                              splited_query[1],
                              i = int(splited_query[3]),
-                             msg_id = query.message.message_id)
+                             msg_id = query.message.message_id,
+                             up_or_down = True)
         return constants.STATE_MAIN
 
     elif (splited_query[0] == 'downvote'):
@@ -71,9 +75,11 @@ def call_handler(bot, update):
                              query.from_user.id,
                              splited_query[1],
                              i = int(splited_query[3]),
-                             msg_id = query.message.message_id)
+                             msg_id = query.message.message_id,
+                             up_or_down = True)
         return constants.STATE_MAIN
 
+#upvote and downvote answers in reply
     elif (splited_query[0] == 'up'):
         ann_id = splited_query[2]
         upvot = db.upvote_answer(ann_id,
@@ -102,13 +108,21 @@ def call_handler(bot, update):
                                 text="سوال با موفقیت حذف شد")
 
     elif (splited_query[0] == 'nextpage'):
-        ii = int(splited_query [1])
-        print(ii)
+        ii = int(splited_query[1])
         questions.show_last_questions(bot,
                                       query.from_user.id,
                                       ii,
                                       callback = True,
                                       m_id = query.message.message_id)
         return constants.STATE_MAIN
+    elif (splited_query[0] == 'followUser'):
+        u_id = int(splited_query[1])
+        db.follow_or_unfollow_user(u_id, query.from_user.id)
+        users.show_user(bot, query.from_user.id, u_id,
+                        callback = True, msg_id = query.message.message_id)
+        return constants.STATE_MAIN
+    elif (splited_query[0] == 'notavailable'):
+        bot.answerCallbackQuery(query.id,
+                                text='انتهای صفحه')
     else:
         return constants.STATE_MAIN

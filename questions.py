@@ -24,6 +24,7 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
         asker = asker['first_name']+ ' '+asker['last_name']
     else:
         asker = '@'+asker['username']
+    # asker = '/u'+str(asker_id)
     if db.user_have_answered(q_id, chat_id):
         answer_text = 'ویرایش جواب'
         answer_callback_data = 'edit_'+str(q_id)+"_"+str(chat_id)
@@ -40,7 +41,7 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
                                      callback_data='deleteQuestion_'+ str(q_id))
          ]]
     keyboard = InlineKeyboardMarkup(buttons)
-    text_message = '🤔سوال: '+question+'؟\n\nAsked by '+asker
+    text_message = '🤔 سوال\n   '+question+'؟\n\nAsked by '+asker
     if withans:
         bot.sendMessage(chat_id, text = text_message)
     else:
@@ -50,9 +51,8 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
             if db.have_answer(q_id):
                 answers.show_answers(bot, chat_id, q_id,show=True)
         else:
-            bot.editMessageText(chat_id = chat_id,
+            bot.editMessageReplyMarkup(chat_id = chat_id,
                                 message_id = msg_id ,
-                                text = text_message,
                                 reply_markup = keyboard)
 
     # ForceReply
@@ -89,6 +89,7 @@ def show_question_to_followers(qid, anid, bot):
         except:
             print('exeption')
             db.unactivate(user)
+
 def show_question_to_all(qid, bot):
     all = db.get_users()
     for user in all:
@@ -99,23 +100,23 @@ def show_question_to_all(qid, bot):
             print('except')
             db.unacitvate_user(user)
 
-def show_last_questions(bot, chat_id, i , number=3, callback = False, m_id = 0):
+def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0):
     skip = number * i
     questions = db.get_last_questions(number, skip)
     if (len(questions) < number ):
-        next_text =''
-        next_call ='nothing'
+        next_text ='صفحه بعد'
+        next_call ='notavailable'
     else:
         next_text ='صفحه بعد'
         next_call ='nextpage'+'_'+str(i+1)
     if (i == 0):
-        before_text = ''
-        before_call ='nothing'
+        before_text = 'صفحه قبل'
+        before_call ='notavailable'
     else:
         before_text = 'صفحه قبل'
         before_call = 'nextpage'+'_'+str(i-1)
-    print(next_call,next_text,before_call,before_text)
-    last_questions_text =str(skip+1)+' تا '+str(skip+number)+'  سوال اخیر:\n'
+
+    last_questions_text = str(skip+1)+' تا '+str(skip+number)+'  سوال اخیر:\n'
     buttons = [[
         InlineKeyboardButton(text=before_text,
                              callback_data= before_call),
@@ -128,10 +129,8 @@ def show_last_questions(bot, chat_id, i , number=3, callback = False, m_id = 0):
         text = '\n🤔سوال: '+ q['question']+'\nلینک: /q'+str(q['msg_id'])+'\n❤️تعداد دنبال کنندگان : '+ str(len(q['followers'])) +'\n📝تعداد جواب ها: '+ str(len(q['answers']))+'\n.'
         last_questions_text += text
 
-    if (callback == True):
-        # bot.editMessageText(chat_id, message_id= m_id, text = last_questions_text, reply_markup = keyboard)
-        print(chat_id,m_id)
+    if callback:
         bot.editMessageText(chat_id = chat_id, message_id = m_id , text = last_questions_text, reply_markup = keyboard)
     else:
+        # bot.sendMessage(chat_id, text = last_questions_text)
         bot.sendMessage(chat_id, text = last_questions_text, reply_markup = keyboard)
-

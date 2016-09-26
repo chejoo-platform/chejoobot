@@ -5,7 +5,7 @@ import questions
 from telegram.ext import ConversationHandler, CallbackQueryHandler
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 
-def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0):
+def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = False):
     answers = db.get_answers(q_id)
     count = len(answers)
     ans = answers[i]
@@ -26,7 +26,7 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0):
         writer = writer['first_name']+ ' '+writer['last_name']
     else:
         writer = '@'+writer['username']
-    text = ans['text'] + str('\n\nfrom ')+writer
+    text = '🖊 جواب'+ ans['text'] + str('\n\nfrom ')+writer
     next_data = 'nextanswer_'+str(q_id)+'_'+str(i+1)
     next_text = 'جواب بعد'
     befor_data = 'nextanswer_'+str(q_id)+'_'+str(i-1)
@@ -51,7 +51,10 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0):
     if show:
         mybot.sendMessage(u_id, text = text, reply_markup = keyboard)
     else:
-        mybot.editMessageText(chat_id = u_id, message_id = msg_id , text = text, reply_markup = keyboard)
+        if up_or_down:
+            mybot.editMessageReplyMarkup(chat_id = u_id, message_id = msg_id, reply_markup = keyboard)
+        else:
+            mybot.editMessageText(chat_id = u_id, message_id = msg_id , text = text, reply_markup = keyboard)
 
 def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
     question = db.get_question(q_id)
@@ -85,7 +88,7 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
     if show:
         mybot.sendMessage(u_id, text = text, reply_markup = keyboard)
     else:
-        mybot.editMessageText(chat_id = u_id, message_id = msg_id , text = text, reply_markup = keyboard)
+        mybot.editMessageReplyMarkup(chat_id = u_id, message_id = msg_id , reply_markup = keyboard)
 
 
 def edit_answer(bot, update):

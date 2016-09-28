@@ -11,12 +11,16 @@ from mytoken import TOKEN, DATABASE_DATABASE
 DATABASE_HOST = 'localhost'
 DATABASE_USER = 'root'
 DATABASE_PASS = ''
-DATABASE_TABLES = ['USERS', 'QUESTIONS', 'ANSWERS', 'TOPICS', 'TEMP', 'ADMINS']
+DATABASE_TABLES = ['USERS', 'QUESTIONS', 'ANSWERS', 'TOPICS', 'COMMENTS', 'TEMP', 'ADMINS']
 USER_LEVELES = ['هیچی', '🐜', '🐞']
 STATE_MAIN = 0
 STATE_ASK = 1
 STATE_ANSWER_INSERT = 2
 STATE_ANSWER_EDIT = 3
+STATE_COMMENT = 4
+TEXT_QUESTION = '❓❓❓❓❓❓❓❓❓'
+TEXT_ANSWER = '✏️✏️✏️✏️✏️✏️✏️✏️✏'
+TEXT_COMMENT = '📎📎📎📎📎📎📎📎📎'
 
 KEYBOARD_MAIN = ReplyKeyboardMarkup([
     [KeyboardButton(text='🤔 از چجو بپرس'),KeyboardButton(text='سوالای اخیر')]

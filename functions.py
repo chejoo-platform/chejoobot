@@ -8,6 +8,7 @@ import answers
 import db
 import questions
 import users
+import comments
 
 def call_handler(bot, update):
     query = update.callback_query
@@ -124,5 +125,18 @@ def call_handler(bot, update):
     elif (splited_query[0] == 'notavailable'):
         bot.answerCallbackQuery(query.id,
                                 text='انتهای صفحه')
+    elif (splited_query[0] == 'comments'):
+        an_id = splited_query[1]
+        q_id = splited_query[3]
+        u_id = query.from_user.id
+        answers.show_answer(bot, u_id, q_id, an_id, True)
+        if int(splited_query[2]) > 0:
+            comments.show_comments(bot, u_id, an_id)
+        db.insert_comment_to_temp(u_id, an_id)
+        bot.sendMessage(query.from_user.id,
+                        text ='اگر تمایل داری کامنت خودت رو وارد کن وگرنه /skip رو بزن',
+                        reply_markup = constants.KEYBOARD_ANSWER_CANCEL)
+        return constants.STATE_COMMENT
+
     else:
         return constants.STATE_MAIN

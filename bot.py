@@ -13,6 +13,7 @@ import questions
 import answers
 import functions
 import users
+import comments
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -36,7 +37,6 @@ def registered_user(bot, update):
     from_user = update.message.chat
     if db.check_user(update.message.from_user.id):
         db.activate(from_user.id)
-        print(update.message)
         bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب نمایید', reply_markup=constants.KEYBOARD_MAIN)
     else:
         db.insert_new_user(from_user.id, from_user.first_name, from_user.last_name, from_user.username)
@@ -49,6 +49,7 @@ def stop_this_fucking_bot(bot, update):
 def main_menue_handler(bot, update):
     message = update.message.text
     if (message == 'سوالای اخیر'):
+        bot.sendChatAction(update.message.chat_id, action = 'typing')
         questions.show_last_questions(bot,update.message.chat_id)
         return constants.STATE_MAIN
     elif (message == '🤔 از چجو بپرس'):
@@ -64,6 +65,7 @@ def commanhandler(bot, update):
     chat_id = update.message.chat_id
     command_pre = update.message.text[1]
     command_post = update.message.text[2:]
+    bot.sendChatAction(chat_id, action = 'typing')
     if (command_pre == 'q'):
         q_id = db.get_question_id_by_msgid(command_post)
         if (q_id == False):
@@ -91,11 +93,13 @@ def error_callback(bot, update, error):
 def main():
     #db.create_database()
     # Create the EventHandler and pass it your bot's token.
+    db.connect()
     updater = Updater(constants.TOKEN)
     # Get the dispatcher to register handlers
 
     main_conversationhandler = ConversationHandler(
         entry_points=[CommandHandler('start', start),
+                      MessageHandler([Filters.command], commanhandler),
                       MessageHandler([Filters.text], registered_user),
                       CallbackQueryHandler(functions.call_handler)],
         states={
@@ -119,7 +123,11 @@ def main():
                                             CommandHandler('skip',
                                                            answers.cancel_edit_answer),
                                             CommandHandler('done',
-                                                           answers.finish_edit_answer)]},
+                                                           answers.finish_edit_answer)],
+            constants.STATE_COMMENT: [MessageHandler([Filters.text],
+                                                           comments.insert_comment),
+                                      CommandHandler('skip',
+                                                     comments.cancel_comment)]},
         fallbacks=[CommandHandler('stop', stop_this_fucking_bot)])
 
     dp = updater.dispatcher

@@ -8,6 +8,7 @@ from telegram import ReplyKeyboardMarkup
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, ConversationHandler
 from random import randint
+
 def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id = 0):
     q = db.get_question(q_id)
     if (q == None):
@@ -41,7 +42,7 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
                                      callback_data='deleteQuestion_'+ str(q_id))
          ]]
     keyboard = InlineKeyboardMarkup(buttons)
-    text_message = '🤔 سوال\n   '+question+'؟\n\nAsked by '+asker
+    text_message = constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n\nAsked by '+asker
     if withans:
         bot.sendMessage(chat_id, text = text_message)
     else:
@@ -59,6 +60,8 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
 
 def insert_question(bot, update):
     msg = update.message
+    if msg.text == 'سوالای اخیر' or msg.text == '🤔 از چجو بپرس':
+        return constants.STATE_ASK
     question_id = str(msg.message_id)+'-'+str(msg.chat.id)
     db.insert_new_question(msg.message_id, msg.text, msg.chat.id, msg.date)
     bot.sendMessage(update.message.chat_id,
@@ -98,7 +101,7 @@ def show_question_to_all(qid, bot):
             show_question(qid, user['id'], bot, callback= False)
         except:
             print('except')
-            db.unacitvate_user(user)
+            db.unactivate(user['id'])
 
 def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0):
     skip = number * i

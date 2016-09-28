@@ -10,6 +10,8 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
     count = len(answers)
     ans = answers[i]
     an_id = ans['id']
+    comments = ans['comments']
+    comments_number = len(comments)
     writer_id = int(ans['id'].split("-")[2])
     upvotes = ans['upvotes']
     downvotes = ans['downvotes']
@@ -26,7 +28,7 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
         writer = writer['first_name']+ ' '+writer['last_name']
     else:
         writer = '@'+writer['username']
-    text = '🖊 جواب'+ ans['text'] + str('\n\nfrom ')+writer
+    text = constants.TEXT_ANSWER+'\n'+'🖊 جواب'+ ans['text'] + str('\n\nfrom ')+writer
     next_data = 'nextanswer_'+str(q_id)+'_'+str(i+1)
     next_text = 'جواب بعد'
     befor_data = 'nextanswer_'+str(q_id)+'_'+str(i-1)
@@ -46,7 +48,9 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
                              callback_data='downvote_'+ str(q_id)+'_'+ an_id + '_'+ str(i)),
         InlineKeyboardButton(text=next_text,\
                              callback_data=next_data)
-         ]]
+         ],
+    [InlineKeyboardButton(text= 'کامنتها '+ str(comments_number),
+                          callback_data='comments_'+an_id+'_'+str(comments_number)+'_'+q_id)]]
     keyboard = InlineKeyboardMarkup(buttons)
     if show:
         mybot.sendMessage(u_id, text = text, reply_markup = keyboard)
@@ -61,6 +65,8 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
     q_text = question['question']
     q_link = '/q'+ str(question['msg_id'])
     ans = db.get_answer(an_id)
+    comments = ans['comments']
+    comments_number = len(comments)
     writer_id = int(an_id.split("-")[2])
     upvotes = ans['upvotes']
     downvotes = ans['downvotes']
@@ -77,13 +83,15 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
         writer = writer['first_name']+ ' '+writer['last_name']
     else:
         writer = '@'+writer['username']
-    text = '🤔سوال: '+ q_text +'\n لینک: '+ q_link+'\n\n✏️جواب جدید: '+ ans['text'] + '\n\nfrom '+writer
+    text = constants.TEXT_QUESTION+'\n'+'🤔سوال: '+ q_text +'\n لینک: '+ q_link+'\n'+constants.TEXT_ANSWER+'\n✏️جواب : '+ ans['text'] + '\n\nfrom '+writer
     buttons = [[
         InlineKeyboardButton(text=text_upvote+' '+str(upvotes),\
                              callback_data='up_'+ str(q_id)+'_'+ an_id),
         InlineKeyboardButton(text=text_downvote+' '+str(downvotes),\
-                             callback_data='down_'+ str(q_id)+'_'+ an_id)
-         ]]
+                             callback_data='down_'+ str(q_id)+'_'+ an_id)],
+        [InlineKeyboardButton(text= 'کامنتها '+ str(comments_number),
+                              callback_data='comments_'+an_id+'_'+str(comments_number)+ '_'+ q_id)]
+         ]
     keyboard = InlineKeyboardMarkup(buttons)
     if show:
         mybot.sendMessage(u_id, text = text, reply_markup = keyboard)

@@ -21,6 +21,7 @@ STATE_COMMENT = 4
 TEXT_QUESTION = '❓❓❓❓❓❓❓❓❓'
 TEXT_ANSWER = '✏️✏️✏️✏️✏️✏️✏️✏️✏'
 TEXT_COMMENT = '📎📎📎📎📎📎📎📎📎'
+TEXT_BREAKE = '\n⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️'
 
 KEYBOARD_MAIN = ReplyKeyboardMarkup([
     [KeyboardButton(text='🤔 از چجو بپرس'),KeyboardButton(text='سوالای اخیر')]

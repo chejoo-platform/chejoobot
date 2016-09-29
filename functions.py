@@ -19,6 +19,9 @@ def call_handler(bot, update):
         if (db.get_question(splited_query[1]) == None ):
             bot.sendMessage(chat_id=query.from_user.id,text='سوال حذف شده است🤗', reply_markup=constants.KEYBOARD_MAIN)
             return constants.STATE_MAIN
+        db.unactivate(query.from_user.id)
+        bot.sendMessage(chat_id=query.from_user.id,text=constants.TEXT_BREAKE)
+        questions.show_question(splited_query[1], query.from_user.id, bot, True)
         bot.sendMessage(chat_id=query.from_user.id,text="جواب خود را وارد کنید یا اگر منصرف شده اید /skip را بزنید ", reply_markup=constants.KEYBOARD_ANSWER_CANCEL)
         db.insert_answer_to_temp(query.from_user.id, splited_query[1])
         return constants.STATE_ANSWER_INSERT
@@ -27,6 +30,8 @@ def call_handler(bot, update):
         if (db.get_question(splited_query[1]) == None ):
             bot.sendMessage(chat_id=query.from_user.id,text='سوال حذف شده است🤗', reply_markup=constants.KEYBOARD_MAIN)
             return constants.STATE_MAIN
+        db.unactivate(query.from_user.id)
+        bot.sendMessage(chat_id=query.from_user.id,text=constants.TEXT_BREAKE)
         questions.show_question(splited_query[1], query.from_user.id, bot, True)
         last_answer = db.get_answer(splited_query[1]+'-'+splited_query[2])['text']
         bot.sendMessage(chat_id=query.from_user.id,text="جواب قبلی شما:\n"+last_answer)
@@ -126,9 +131,11 @@ def call_handler(bot, update):
         bot.answerCallbackQuery(query.id,
                                 text='انتهای صفحه')
     elif (splited_query[0] == 'comments'):
+        db.unactivate(query.from_user.id)
         an_id = splited_query[1]
         q_id = splited_query[3]
         u_id = query.from_user.id
+        bot.sendMessage(chat_id=query.from_user.id,text=constants.TEXT_BREAKE)
         answers.show_answer(bot, u_id, q_id, an_id, True)
         if int(splited_query[2]) > 0:
             comments.show_comments(bot, u_id, an_id)

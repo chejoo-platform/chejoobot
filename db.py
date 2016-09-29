@@ -24,15 +24,15 @@ def create_database():
             pass
         else:
             r.table_create(table).run(conn)
-    add_to_admins(54659968)
-    deactivate_all_users()
+    acitvate_all_users()
     # conn.close()
 
 def insert_new_user(telid, first_name, last_name, username):
     # conn = connect()
     new_user = {"id": telid, "first_name": first_name, "last_name": last_name,
                 "username": username, "active": True,
-                "score": 0, "followers": [], "level" : 1}
+                "score": 0, "followers": [], "level" : 1,
+                'a_numbers': 0, 'q_numbers': 0}
     r.table("USERS").insert(new_user).run(conn)
     # conn.close()
 
@@ -55,6 +55,9 @@ def activate(user):
     # conn = connect()
     r.table('USERS').get(user).update({'active': True}).run(conn)
     # conn.close()
+
+def user_is_active(u_id):
+    return r.table('USERS').get(u_id).run(conn)['active']
 
 def user_is_admin(u_id):
     # conn = connect()
@@ -86,6 +89,7 @@ def get_user(telid):
 def get_users():
     # conn = connect()
     x = r.table('USERS').filter({'active': True}).run(conn)
+    print(x)
     # conn.close()
     return x
 
@@ -104,7 +108,7 @@ def follow_or_unfollow_user(u_id, follower_id):
 
 def insert_new_question(idd, text, userid, date):
     # conn = connect()
-    new_question = {"id": str(idd)+'-'+str(userid) ,"msg_id": idd, "question": text, "user_id": userid, 'date': pytz.utc.localize(date), 'followers': [userid], 'answers': []}
+    new_question = {"id": str(idd)+'-'+str(userid) ,"msg_id": idd, "question": text, "user_id": userid, 'date': pytz.utc.localize(date), 'followers': [userid], 'answers': list()}
     r.table('QUESTIONS').insert(new_question).run(conn)
     user = r.table('USERS').get(userid)
     q_numbers = user.run(conn)['q_numbers']+1
@@ -161,18 +165,7 @@ def get_last_questions(n, s):
 def insert_answer_to_temp_edit(user_id, q_id):
     # conn = connect()
     x = r.table('ANSWERS').get(str(q_id)+'-'+str(user_id)).run(conn)
-    last_votes = x['upvotes']
-    last_voters = x['upvoters']
-    last_downvotes = x['downvotes']
-    last_downvoters = x['downvoters']
-    last_up_and_down = x['up_and_down']
-    last_comments = x ['comments']
-    new_answer = {'id': user_id, 'q_id': q_id, 'text': '',
-                  'upvotes': last_votes, 'upvoters': last_voters,
-                  'downvotes': last_downvotes, 'downvoters': last_downvoters,
-                  'up_and_down': last_up_and_down,
-                  'comments' : last_comments,
-                  'date': r.now()}
+    new_answer = {'id': user_id, 'q_id': q_id, 'text': ''}
     r.table('TEMP').insert(new_answer).run(conn)
     # conn.close()
 
@@ -198,19 +191,31 @@ def push_answer_form_temp_to_answers(user_id):
     # conn = connect()
     touple = r.table('TEMP').get(user_id).run(conn)
     q_id = touple['q_id']
-    answers = set(r.table('QUESTIONS').get(q_id).run(conn)['answers'])
+    question = r.table('QUESTIONS').get(q_id).run(conn)
+    answers = question['answers']
+    touple['u_id'] = user_id
     new_id = q_id+"-"+str(user_id)
     touple['id'] = new_id
     r.table('TEMP').get(user_id).delete().run(conn)
-    if (r.table('ANSWERS').get(new_id).run(conn) == None):
-        r.table('ANSWERS').insert(touple).run(conn)
-        answers.add(new_id)
-        r.table('QUESTIONS').get(q_id).update({'answers': list(answers)}).run(conn)
-    else:
-        r.table('ANSWERS').get(new_id).update(touple).run(conn)
+    r.table('ANSWERS').insert(touple).run(conn)
+    answers.append(new_id)
+    r.table('QUESTIONS').get(q_id).update({'answers': answers}).run(conn)
     user = r.table('USERS').get(user_id)
-    a_numbers = user.run(conn)['a_numbers']+1
+    a_numbers = user.run(conn)['a_numbers'] + 1
     user.update({'a_numbers': a_numbers }).run(conn)
+    # conn.close()
+    return q_id, new_id
+
+def push_answer_form_temp_to_answers_edit_mod(user_id):
+    # conn = connect()
+    touple = r.table('TEMP').get(user_id).run(conn)
+    q_id = touple['q_id']
+    new_id = q_id+"-"+str(user_id)
+    touple['u_id'] = user_id
+    touple['id'] = new_id
+    r.table('TEMP').get(user_id).delete().run(conn)
+    r.table('ANSWERS').get(new_id).update(touple).run(conn)
+    user = r.table('USERS').get(user_id)
     # conn.close()
     return q_id, new_id
 
@@ -361,5 +366,40 @@ def get_comment(c_id):
     # conn.close()
     return comment
 
+def update_users():
+    acitvate_all_users()
+    for user in get_users():
+        q_numbers = len(list(r.table('QUESTIONS').filter({'user_id': user['id']}).run(conn)))
+        a_numbers = len(list(r.table('ANSWERS').filter({'u_id': user['id']}).run(conn)))
+        r.table('USERS').get(user['id']).update({'a_numbers': a_numbers, 'q_numbers': q_numbers}).run(conn)
+
+def update_answers():
+    for an in r.table('ANSWERS').run(conn):
+        u_id = int(an['id'].split('-')[2])
+        r.table('ANSWERS').get(an['id']).update({'u_id': u_id}).run(conn)
+
+def update_questions():
+    for q in r.table('QUESTIONS').run(conn):
+        q_id = q['id']
+        r.table('QUESTIONS').get(q_id).update({'answers': list()}).run(conn)
+
+    for a in r.table("ANSWERS").run(conn):
+        an_id = a['id']
+        q_id = a['q_id']
+        answers = r.table('QUESTIONS').get(q_id).run(conn)['answers']
+        answers.append(an_id)
+        r.table('QUESTIONS').get(q_id).update({'answers': answers}).run(conn)
+
+def delete_answers_without_questions():
+    for a in r.table("ANSWERS").run(conn):
+        q_id = a['q_id']
+        an_id = a['id']
+        if r.table('QUESTIONS').get(q_id).run(conn) == None:
+            r.table('ANSWERS').get(an_id).delete().run(conn)
+
 if __name__ == '__main__' :
     create_database()
+    update_answers()
+    delete_answers_without_questions()
+    update_questions()
+

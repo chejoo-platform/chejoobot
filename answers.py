@@ -56,7 +56,7 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
         mybot.sendMessage(u_id, text = text, reply_markup = keyboard)
     else:
         if up_or_down:
-            mybot.editMessageReplyMarkup(chat_id = u_id, message_id = msg_id, reply_markup = keyboard)
+            mybot.editMessageText(chat_id = u_id, message_id = msg_id, text = text, reply_markup = keyboard)
         else:
             mybot.editMessageText(chat_id = u_id, message_id = msg_id , text = text, reply_markup = keyboard)
 
@@ -106,6 +106,7 @@ def edit_answer(bot, update):
     bot.sendMessage(chat_id=u_id,\
                     text='اگر پاسختان تمام شده روی /done بزنید در غیر اینصورت ادامه جوابتان را وارد نمایید و اگر از جواب دادن منصرف شده اید میتوانید /skip را بزنید: ', reply_markup = constants.KEYBOARD_ANSWER_INSERT)
     # db.insert_new_answer(q_id, answer)
+    db.unactivate(u_id)
     return constants.STATE_ANSWER_EDIT
 
 def insert_answer(bot, update):
@@ -114,12 +115,15 @@ def insert_answer(bot, update):
     db.update_answer_of_temp(u_id, my_answer)
     bot.sendMessage(chat_id=u_id,\
                     text='اگر پاسختان تمام شده روی /done بزنید در غیر اینصورت ادامه جوابتان را وارد نمایید و اگر از جواب دادن منصرف شده اید میتوانید /skip را بزنید: ', reply_markup = constants.KEYBOARD_ANSWER_INSERT)
+    db.unactivate(u_id)
     return constants.STATE_ANSWER_INSERT
 
 def finish_answer(bot, update):
     u_id = update.message.chat_id
     qid, an_id = db.push_answer_form_temp_to_answers(u_id)
+    db.upvote_answer(an_id, u_id)
     bot.sendMessage(chat_id = u_id, text=' جواب شما با موفقیت ثبت شد', reply_markup= constants.KEYBOARD_MAIN)
+    db.activate(update.message.chat_id)
     questions.show_question_to_followers(qid, an_id, bot)
     return constants.STATE_MAIN
 
@@ -130,13 +134,15 @@ def cancel_answer(bot, update):
                     text = 'جوابی ثبت نشد',
                     reply_markup=constants.KEYBOARD_MAIN)
     questions.show_question(qid, u_id, bot, False)
+    db.activate(update.message.chat_id)
     return constants.STATE_MAIN
 
 def finish_edit_answer(bot, update):
     u_id = update.message.chat_id
-    qid, anid = db.push_answer_form_temp_to_answers(u_id)
+    qid, anid = db.push_answer_form_temp_to_answers_edit_mod(u_id)
     bot.sendMessage(chat_id = u_id, text=' جواب ادیت شده ی شما با موفقیت ثبت شد', reply_markup= constants.KEYBOARD_MAIN)
     show_answer(bot, u_id, qid, anid, True)
+    db.activate(update.message.chat_id)
     # questions.show_question(qid, u_id, bot)
     return constants.STATE_MAIN
 
@@ -147,4 +153,5 @@ def cancel_edit_answer(bot, update):
                     text = 'جواب شما بدون تغییر باقی ماند',
                     reply_markup=constants.KEYBOARD_MAIN)
     questions.show_question(qid, u_id, bot, False)
+    db.activate(update.message.chat_id)
     return constants.STATE_MAIN

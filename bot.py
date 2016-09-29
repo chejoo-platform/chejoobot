@@ -55,6 +55,7 @@ def main_menue_handler(bot, update):
     elif (message == '🤔 از چجو بپرس'):
         bot.sendMessage(update.message.chat_id,
                         text = ' سوال خودت رو وارد کن یا اگه سوال نداری /skip رو بزن\n.', reply_markup=constants.KEYBOARD_ASK)
+        db.unactivate(update.message.chat_id)
         return constants.STATE_ASK
     elif (message == '👤 پروفایل'):
         return constants.STATE_MAIN
@@ -75,6 +76,10 @@ def commanhandler(bot, update):
     if (command_pre == 'u'):
         users.show_user(bot, chat_id, int(command_post))
     return constants.STATE_MAIN
+
+def wrong_call_handler(bot, update):
+    query = update.callback_query
+    bot.sendMessage(chat_id=query.chat_id, text='لطفا /skip را بزنید')
 
 def error_callback(bot, update, error):
     try:
@@ -111,23 +116,27 @@ def main():
             constants.STATE_ASK:  [MessageHandler([Filters.text],
                                                   questions.insert_question),
                                    CommandHandler('skip',
-                                                  questions.skip_question)],
+                                                  questions.skip_question),
+                                   CallbackQueryHandler(wrong_call_handler)],
             constants.STATE_ANSWER_INSERT: [MessageHandler([Filters.text],
                                                            answers.insert_answer),
                                             CommandHandler('skip',
                                                            answers.cancel_answer),
                                             CommandHandler('done',
-                                                           answers.finish_answer)],
+                                                           answers.finish_answer),
+                                            CallbackQueryHandler(wrong_call_handler)],
             constants.STATE_ANSWER_EDIT: [MessageHandler([Filters.text],
                                                          answers.edit_answer),
-                                            CommandHandler('skip',
+                                          CommandHandler('skip',
                                                            answers.cancel_edit_answer),
-                                            CommandHandler('done',
-                                                           answers.finish_edit_answer)],
+                                          CommandHandler('done',
+                                                           answers.finish_edit_answer),
+                                          CallbackQueryHandler(wrong_call_handler)],
             constants.STATE_COMMENT: [MessageHandler([Filters.text],
                                                            comments.insert_comment),
                                       CommandHandler('skip',
-                                                     comments.cancel_comment)]},
+                                                     comments.cancel_comment),
+                                      CallbackQueryHandler(wrong_call_handler)]},
         fallbacks=[CommandHandler('stop', stop_this_fucking_bot)])
 
     dp = updater.dispatcher

@@ -62,12 +62,13 @@ def insert_question(bot, update):
     msg = update.message
     if msg.text == 'سوالای اخیر' or msg.text == '🤔 از چجو بپرس':
         return constants.STATE_ASK
-    question_id = str(msg.message_id)+'-'+str(msg.chat.id)
-    db.insert_new_question(msg.message_id, msg.text, msg.chat.id, msg.date)
+    question_id = str(msg.message_id)+'-'+str(msg.chat_id)
+    db.insert_new_question(msg.message_id, msg.text, msg.chat_id, msg.date)
     bot.sendMessage(update.message.chat_id,
                     text = " سوالت با موفقیت ثبت شد",
                     reply_markup = constants.KEYBOARD_MAIN)
     # show_question_to_followers(question_id, bot)
+    db.activate(update.message.chat_id)
     show_question_to_all(question_id, bot)
     # show_question(question_id, msg.chat.id, bot)
     return constants.STATE_MAIN
@@ -75,6 +76,7 @@ def insert_question(bot, update):
 def skip_question(bot, update):
     bot.sendMessage(update.message.chat_id,\
                     text ="سوالی ثبت نشد", reply_markup= constants.KEYBOARD_MAIN)
+    db.activate(update.message.chat_id)
     return constants.STATE_MAIN
 
 def show_random_question(bot, user_id):
@@ -85,20 +87,24 @@ def show_random_question(bot, user_id):
 def show_question_to_followers(qid, anid, bot):
     followers = db.get_followers_question(qid)
     for user in followers:
-        try:
-            bot.sendMessage(user, text='سوالی که قبلا لایک کرده بودید جواب داده شد')
-            # show_question(qid, user, bot, withans = True)
-            answers.show_answer(bot, user, qid, anid, True)
-        except:
-            print('exeption')
-            db.unactivate(user)
+        if db.user_is_active(user):
+            try:
+                bot.sendMessage(user, text='سوالی که قبلا لایک کرده بودید جواب داده شد')
+                # show_question(qid, user, bot, withans = True)
+                answers.show_answer(bot, user, qid, anid, True)
+            except:
+                print('exeption')
+                db.unactivate(user)
 
 def show_question_to_all(qid, bot):
     all = db.get_users()
+    print('inja')
+    print(all)
     for user in all:
         try:
             bot.sendMessage(user['id'], text='سوال جدید زیر پرسیده شده')
-            show_question(qid, user['id'], bot, callback= False)
+            print('yes')
+            show_question(qid, user['id'], bot, False)
         except:
             print('except')
             db.unactivate(user['id'])
@@ -129,7 +135,11 @@ def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0
     keyboard = InlineKeyboardMarkup(buttons)
 
     for q in questions:
-        text = '\n🤔سوال: '+ q['question']+'\nلینک: /q'+str(q['msg_id'])+'\n❤️تعداد دنبال کنندگان : '+ str(len(q['followers'])) +'\n📝تعداد جواب ها: '+ str(len(q['answers']))+'\n.'
+        if q['answers'] == None:
+            q_number = 0
+        else:
+            q_number = len(q['answers'])
+        text = '\n🤔سوال: '+ q['question']+'\nلینک: /q'+str(q['msg_id'])+'\n❤️تعداد دنبال کنندگان : '+ str(len(q['followers'])) +'\n📝تعداد جواب ها: '+ str(q_number)+'\n.'
         last_questions_text += text
 
     if callback:

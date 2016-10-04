@@ -13,7 +13,7 @@ def show_user(bot, chat_id, u_id, callback = False, msg_id = 0):
     q_numbers = str(user['q_numbers'])
     a_numbers = str(user['a_numbers'])
     followers_number = str(len(user['followers']))
-    user_info = username + '\nپروفایل '+ user['first_name'] + '\n🤔تعداد سوال ها :' + q_numbers + '\n📝تعداد پاسخ ها: '+ a_numbers+'\n⭐ستاره: ' + str(user['score']) + '\nمرتبه: ' + constants.USER_LEVELES[user['level']]
+    user_info = username + '\nپروفایل '+ user['first_name'] + '\n🤔تعداد سوال:  ' + q_numbers + '\n📝تعداد پاسخ:  '+ a_numbers+'\n⭐ستاره:  ' + str(user['score']) + '\nسطح:  ' + str(user['level'])
     if chat_id in user['followers']:
         text_like = '❤️'
     else:

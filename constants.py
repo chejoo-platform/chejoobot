@@ -18,13 +18,16 @@ STATE_ASK = 1
 STATE_ANSWER_INSERT = 2
 STATE_ANSWER_EDIT = 3
 STATE_COMMENT = 4
+STATE_TOPIC = 5
+STATE_READ = 6
 TEXT_QUESTION = '❓❓❓❓❓❓❓❓❓'
 TEXT_ANSWER = '✏️✏️✏️✏️✏️✏️✏️✏️✏'
 TEXT_COMMENT = '📎📎📎📎📎📎📎📎📎'
 TEXT_BREAKE = '\n⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️'
 
 KEYBOARD_MAIN = ReplyKeyboardMarkup([
-    [KeyboardButton(text='🤔 از چجو بپرس'),KeyboardButton(text='سوالای اخیر')]
+    [KeyboardButton(text='🤔 از چجو بپرس'),KeyboardButton(text='سوالای اخیر')],
+    [KeyboardButton(text='⚙ تنظیمات'), KeyboardButton(text='👤 پروفایل')]
 ],
                                     resize_keyboard = True)
 KEYBOARD_ASK = ReplyKeyboardMarkup([
@@ -39,3 +42,16 @@ KEYBOARD_ANSWER_CANCEL = ReplyKeyboardMarkup([
     [KeyboardButton(text='/skip')]
 ],
                                              resize_keyboard= True)
+KEYBOARD_TOPIC = ReplyKeyboardMarkup([
+    [KeyboardButton(text='پلتفرم'), KeyboardButton(text='استارتاپ')],
+    [KeyboardButton(text='متفرقه'), KeyboardButton(text='چجو')],
+    [KeyboardButton(text='/skip')]
+],
+                                   resize_keyboard = True)
+KEYBOARD_READ = ReplyKeyboardMarkup([
+    [KeyboardButton(text='همه')],
+    [KeyboardButton(text='پلتفرم'), KeyboardButton(text='استارتاپ')],
+    [KeyboardButton(text='متفرقه'), KeyboardButton(text='چجو')],
+    [KeyboardButton(text='⬅️')]
+],
+                                             resize_keyboard =True)

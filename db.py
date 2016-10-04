@@ -32,8 +32,13 @@ def insert_new_user(telid, first_name, last_name, username):
     new_user = {"id": telid, "first_name": first_name, "last_name": last_name,
                 "username": username, "active": True,
                 "score": 0, "followers": [], "level" : 1,
-                'a_numbers': 0, 'q_numbers': 0}
+                'a_numbers': 0, 'q_numbers': 0,
+                'topics': list()}
     r.table("USERS").insert(new_user).run(conn)
+    follow_or_unfollow_topic(telid, 'پلتفرم')
+    follow_or_unfollow_topic(telid, 'استارتاپ')
+    follow_or_unfollow_topic(telid, 'چجو')
+    follow_or_unfollow_topic(telid, 'متفرقه')
     # conn.close()
 
 def deactivate_all_users():
@@ -87,10 +92,11 @@ def get_user(telid):
     return x
 
 def get_users():
-    # conn = connect()
     x = r.table('USERS').filter({'active': True}).run(conn)
-    print(x)
-    # conn.close()
+    return x
+
+def get_users_followed_topic(topic):
+    x = r.table('USERS').filter({'active': True}).filter(lambda user:user['topics'].contains(topic)).run(conn)
     return x
 
 def follow_or_unfollow_user(u_id, follower_id):
@@ -114,6 +120,36 @@ def insert_new_question(idd, text, userid, date):
     q_numbers = user.run(conn)['q_numbers']+1
     user.update({'q_numbers': q_numbers }).run(conn)
     # conn.close()
+
+def insert_question_to_temp(msg_id, text, u_id, date):
+    # conn = connect()
+    new_question = {"id": u_id ,"msg_id": msg_id, "question": text, "user_id": u_id, 'date': r.now(), 'followers': [u_id], 'answers': list(), 'topics': list()}
+    r.table('TEMP').insert(new_question).run(conn)
+    # conn.close()
+
+def insert_topic_to_temp(user_id, topic):
+    # conn = connect()
+    old_topic = r.table('TEMP').get(user_id).run(conn)['topics']
+    old_topic.append(topic)
+    up_topic = {'topics': old_topic}
+    r.table('TEMP').get(user_id).update(up_topic).run(conn)
+    # conn.close()
+
+def push_question_from_temp_to_questions(user_id):
+    # conn = connect()
+    touple = r.table('TEMP').get(user_id).run(conn)
+    new_id = str(touple['msg_id'])+'-'+str(user_id)
+    touple['id'] = new_id
+    r.table('TEMP').get(user_id).delete().run(conn)
+    r.table('QUESTIONS').insert(touple).run(conn)
+    user = r.table('USERS').get(user_id)
+    q_numbers = user.run(conn)['q_numbers']+1
+    user.update({'q_numbers': q_numbers }).run(conn)
+    return new_id
+
+def empty_temp(u_id):
+    r.table('TEMP').get(u_id).delete().run(conn)
+
 
 def follow_or_unfollow_question(q_id, user_id):
     # conn = connect()
@@ -156,11 +192,18 @@ def delete_question(q_id):
     user.update({'q_numbers': q_numbers }).run(conn)
     # conn.close()
 
-def get_last_questions(n, s):
+def get_last_questions(n, s, topic):
     # conn = connect()
-    questions = r.table('QUESTIONS').order_by(r.desc('date')).skip(s).limit(n).run(conn)
+    if (topic == 'همه'):
+        questions = r.table('QUESTIONS').order_by(r.desc('date')).skip(s).limit(n).run(conn)
+    else:
+        questions = r.table('QUESTIONS').filter(lambda q: q['topics'].contains(topic)).order_by(r.desc('date')).skip(s).limit(n).run(conn)
     # conn.close()
     return questions
+
+def get_topic_of_question(q_id):
+    topics = r.table('QUESTIONS').get(q_id).run(conn)['topics']
+    return topics[0]
 
 def insert_answer_to_temp_edit(user_id, q_id):
     # conn = connect()
@@ -366,17 +409,34 @@ def get_comment(c_id):
     # conn.close()
     return comment
 
+def get_user_topics(u_id):
+    topics = r.table('USERS').get(u_id).run(conn)['topics']
+    return topics
+
+def follow_or_unfollow_topic(u_id, topic):
+    topics = r.table('USERS').get(u_id).run(conn)['topics']
+    t=r.table('TOPICS').get(topic).run(conn)
+    f_number = t['f_number']
+    if topic in topics:
+        topics.remove(topic)
+        f_number -= 1
+        r.table('TOPICS').get(topic).update({'f_number': f_number})
+    else:
+        topics.append(topic)
+        f_number += 1
+    r.table('TOPICS').get(topic).update({'f_number': f_number}).run(conn)
+    r.table('USERS').get(u_id).update({'topics': topics}).run(conn)
+
+def topic_follower_number(topic):
+    f_number =r.table('TOPICS').get(topic).run(conn)['f_number']
+    return f_number
+
 def update_users():
     acitvate_all_users()
     for user in get_users():
         q_numbers = len(list(r.table('QUESTIONS').filter({'user_id': user['id']}).run(conn)))
         a_numbers = len(list(r.table('ANSWERS').filter({'u_id': user['id']}).run(conn)))
         r.table('USERS').get(user['id']).update({'a_numbers': a_numbers, 'q_numbers': q_numbers}).run(conn)
-
-def update_answers():
-    for an in r.table('ANSWERS').run(conn):
-        u_id = int(an['id'].split('-')[2])
-        r.table('ANSWERS').get(an['id']).update({'u_id': u_id}).run(conn)
 
 def update_questions():
     for q in r.table('QUESTIONS').run(conn):
@@ -397,9 +457,20 @@ def delete_answers_without_questions():
         if r.table('QUESTIONS').get(q_id).run(conn) == None:
             r.table('ANSWERS').get(an_id).delete().run(conn)
 
+def insert_empty_topic_to_old_questions():
+    for q in r.table('QUESTIONS').run(conn):
+        r.table('QUESTIONS').get(q['id']).update({'topics': list()}).run(conn)
+
+def update_topic_follow_number():
+    p_f_num = len(list(r.table('USERS').filter(lambda user: user['topics'].contains('پلتفرم')).run(conn)))
+    c_f_num = len(list(r.table('USERS').filter(lambda user: user['topics'].contains('چجو')).run(conn)))
+    o_f_num = len(list(r.table('USERS').filter(lambda user: user['topics'].contains('متفرقه')).run(conn)))
+    s_f_num = len(list(r.table('USERS').filter(lambda user: user['topics'].contains('استارتاپ')).run(conn)))
+    r.table('TOPICS').get('پلتفرم').update({'f_number': p_f_num}).run(conn)
+    r.table('TOPICS').get('استارتاپ').update({'f_number': s_f_num}).run(conn)
+    r.table('TOPICS').get('چجو').update({'f_number': c_f_num}).run(conn)
+    r.table('TOPICS').get('متفرقه').update({'f_number': o_f_num}).run(conn)
+
 if __name__ == '__main__' :
     create_database()
-    update_answers()
-    delete_answers_without_questions()
-    update_questions()
-
+    # update_topic_follow_number()

@@ -14,6 +14,7 @@ import answers
 import functions
 import users
 import comments
+import topics
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -49,18 +50,22 @@ def stop_this_fucking_bot(bot, update):
 def main_menue_handler(bot, update):
     message = update.message.text
     if (message == 'سوالای اخیر'):
-        bot.sendChatAction(update.message.chat_id, action = 'typing')
-        questions.show_last_questions(bot,update.message.chat_id)
-        return constants.STATE_MAIN
+        bot.sendMessage(update.message.chat_id,
+                        text = 'از موضوعات زیر یکی رو انتخاب کن', reply_markup=constants.KEYBOARD_READ)
+        db.unactivate(update.message.chat_id)
+        return constants.STATE_READ
     elif (message == '🤔 از چجو بپرس'):
         bot.sendMessage(update.message.chat_id,
                         text = ' سوال خودت رو وارد کن یا اگه سوال نداری /skip رو بزن\n.', reply_markup=constants.KEYBOARD_ASK)
         db.unactivate(update.message.chat_id)
         return constants.STATE_ASK
     elif (message == '👤 پروفایل'):
+        users.show_user(bot, update.message.chat_id, update.message.chat_id)
         return constants.STATE_MAIN
+    elif (message == '⚙ تنظیمات'):
+        topics.select_topics(bot, update.message.chat_id)
     else:
-        bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب نمایید', reply_markup=constants.KEYBOARD_MAIN)
+        bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب کن', reply_markup=constants.KEYBOARD_MAIN)
 
 def commanhandler(bot, update):
     chat_id = update.message.chat_id
@@ -73,13 +78,19 @@ def commanhandler(bot, update):
             bot.sendMessage(chat_id=chat_id,text='سوال حذف شده است🤗', reply_markup=constants.KEYBOARD_MAIN)
         else:
             questions.show_question(q_id, chat_id, bot)
-    if (command_pre == 'u'):
+    elif (command_pre == 'u'):
         users.show_user(bot, chat_id, int(command_post))
+    else:
+        bot.sendMessage(chat_id=chat_id,text='لطفا از منوی زیر انتخاب کن', reply_markup=constants.KEYBOARD_MAIN)
     return constants.STATE_MAIN
 
 def wrong_call_handler(bot, update):
     query = update.callback_query
-    bot.sendMessage(chat_id=query.chat_id, text='لطفا /skip را بزنید')
+    bot.sendMessage(chat_id=query.from_user.id, text='لطفا /skip را بزنید', reply_markup = constants.KEYBOARD_ANSWER_CANCEL)
+
+def skip(bot, update):
+    bot.sendMessage(chat_id=update.message.chat_id, text='برگشتی به منوی اصلی', reply_markup = constants.KEYBOARD_MAIN)
+    return constants.STATE_MAIN
 
 def error_callback(bot, update, error):
     try:
@@ -108,35 +119,37 @@ def main():
                       MessageHandler([Filters.text], registered_user),
                       CallbackQueryHandler(functions.call_handler)],
         states={
-            constants.STATE_MAIN: [MessageHandler([Filters.text],
-                                                  main_menue_handler),
-                                   MessageHandler([Filters.command],
-                                                  commanhandler),
+            constants.STATE_MAIN: [MessageHandler([Filters.text], main_menue_handler),
+                                   MessageHandler([Filters.command], commanhandler),
                                    CallbackQueryHandler(functions.call_handler)],
-            constants.STATE_ASK:  [MessageHandler([Filters.text],
-                                                  questions.insert_question),
-                                   CommandHandler('skip',
-                                                  questions.skip_question),
+
+            constants.STATE_ASK:  [MessageHandler([Filters.text], questions.insert_question),
+                                   CommandHandler('skip', questions.skip_question),
                                    CallbackQueryHandler(wrong_call_handler)],
-            constants.STATE_ANSWER_INSERT: [MessageHandler([Filters.text],
-                                                           answers.insert_answer),
-                                            CommandHandler('skip',
-                                                           answers.cancel_answer),
-                                            CommandHandler('done',
-                                                           answers.finish_answer),
+
+            constants.STATE_ANSWER_INSERT: [MessageHandler([Filters.text], answers.insert_answer),
+                                            CommandHandler('skip', answers.cancel_answer),
+                                            CommandHandler('done', answers.finish_answer),
                                             CallbackQueryHandler(wrong_call_handler)],
-            constants.STATE_ANSWER_EDIT: [MessageHandler([Filters.text],
-                                                         answers.edit_answer),
-                                          CommandHandler('skip',
-                                                           answers.cancel_edit_answer),
-                                          CommandHandler('done',
-                                                           answers.finish_edit_answer),
+
+            constants.STATE_ANSWER_EDIT: [MessageHandler([Filters.text], answers.edit_answer),
+                                          CommandHandler('skip', answers.cancel_edit_answer),
+                                          CommandHandler('done', answers.finish_edit_answer),
                                           CallbackQueryHandler(wrong_call_handler)],
-            constants.STATE_COMMENT: [MessageHandler([Filters.text],
-                                                           comments.insert_comment),
-                                      CommandHandler('skip',
-                                                     comments.cancel_comment),
-                                      CallbackQueryHandler(wrong_call_handler)]},
+
+            constants.STATE_COMMENT: [MessageHandler([Filters.text], comments.insert_comment),
+                                      CommandHandler('skip', comments.cancel_comment),
+                                      CallbackQueryHandler(wrong_call_handler)],
+
+            constants.STATE_TOPIC: [MessageHandler([Filters.text], topics.insert_topic),
+                                          CommandHandler('skip', questions.skip_question),
+                                          CommandHandler('done', questions.finish_question),
+                                          CallbackQueryHandler(wrong_call_handler)],
+
+            constants.STATE_READ: [MessageHandler([Filters.text], questions.show),
+                                   CommandHandler('skip', skip),
+                                   CallbackQueryHandler(wrong_call_handler)],
+        },
         fallbacks=[CommandHandler('stop', stop_this_fucking_bot)])
 
     dp = updater.dispatcher

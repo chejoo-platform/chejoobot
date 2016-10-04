@@ -9,6 +9,7 @@ import db
 import questions
 import users
 import comments
+import topics
 
 def call_handler(bot, update):
     query = update.callback_query
@@ -118,8 +119,10 @@ def call_handler(bot, update):
         questions.show_last_questions(bot,
                                       query.from_user.id,
                                       ii,
+                                      number = 5,
                                       callback = True,
-                                      m_id = query.message.message_id)
+                                      m_id = query.message.message_id,
+                                      topic = splited_query[2])
         return constants.STATE_MAIN
     elif (splited_query[0] == 'followUser'):
         u_id = int(splited_query[1])
@@ -145,5 +148,8 @@ def call_handler(bot, update):
                         reply_markup = constants.KEYBOARD_ANSWER_CANCEL)
         return constants.STATE_COMMENT
 
+    elif (splited_query[0] == 'followTopic'):
+        db.follow_or_unfollow_topic(query.from_user.id, splited_query[1])
+        topics.select_topics(bot, query.from_user.id, True, m_id=query.message.message_id)
     else:
         return constants.STATE_MAIN

@@ -24,7 +24,7 @@ def create_database():
             pass
         else:
             r.table_create(table).run(conn)
-    acitvate_all_users()
+    # acitvate_all_users()
     # conn.close()
 
 def insert_new_user(telid, first_name, last_name, username):
@@ -35,10 +35,10 @@ def insert_new_user(telid, first_name, last_name, username):
                 'a_numbers': 0, 'q_numbers': 0,
                 'topics': list()}
     r.table("USERS").insert(new_user).run(conn)
-    follow_or_unfollow_topic(telid, 'پلتفرم')
-    follow_or_unfollow_topic(telid, 'استارتاپ')
+    # follow_or_unfollow_topic(telid, 'پلتفرم')
+    # follow_or_unfollow_topic(telid, 'استارتاپ')
     follow_or_unfollow_topic(telid, 'چجو')
-    follow_or_unfollow_topic(telid, 'متفرقه')
+    # follow_or_unfollow_topic(telid, 'متفرقه')
     # conn.close()
 
 def deactivate_all_users():
@@ -91,6 +91,10 @@ def get_user(telid):
     # conn.close()
     return x
 
+def get_user_by_username(username):
+    x = list(r.table('USERS').filter({'username': username}).run(conn))[0]['id']
+    return x
+
 def get_users():
     x = r.table('USERS').filter({'active': True}).run(conn)
     return x
@@ -110,6 +114,7 @@ def follow_or_unfollow_user(u_id, follower_id):
     else:
         followers.add(follower_id)
     r.table('USERS').get(u_id).update({'followers': list(followers)}).run(conn)
+    return (follower_id in followers)
     # conn.close()
 
 def insert_new_question(idd, text, userid, date):
@@ -160,6 +165,7 @@ def follow_or_unfollow_question(q_id, user_id):
     else:
         followers.add(user_id)
     r.table('QUESTIONS').get(q_id).update({'followers': list(followers)}).run(conn)
+    return (user_id in followers)
     # conn.close()
 
 def get_followers_question(q_id):
@@ -215,10 +221,10 @@ def insert_answer_to_temp_edit(user_id, q_id):
 def insert_answer_to_temp(user_id, q_id):
     # conn = connect()
     new_answer = {'id': user_id, 'q_id': q_id, 'text': '',
-                  'upvotes': 0 , 'upvoters': [],
-                  'downvotes': 0, 'downvoters': [],
+                  'upvotes': 0 , 'upvoters': list(),
+                  'downvotes': 0, 'downvoters': list(),
                   'up_and_down': 0, 'date': r.now(),
-                  'comments': []}
+                  'comments': list()}
     r.table('TEMP').insert(new_answer).run(conn)
     # conn.close()
 
@@ -398,10 +404,10 @@ def insert_comment(user_id, text):
 
 def del_comment_from_temp(u_id):
     # conn = connect()
-    an_id = r.table('TEMP').get(u_id).run(conn)['an_id']
+    # an_id = r.table('TEMP').get(u_id).run(conn)['an_id']
     r.table('TEMP').get(u_id).delete().run(conn)
     # conn.close()
-    return an_id
+    # return an_id
 
 def get_comment(c_id):
     # conn = connect()
@@ -420,12 +426,12 @@ def follow_or_unfollow_topic(u_id, topic):
     if topic in topics:
         topics.remove(topic)
         f_number -= 1
-        r.table('TOPICS').get(topic).update({'f_number': f_number})
     else:
         topics.append(topic)
         f_number += 1
     r.table('TOPICS').get(topic).update({'f_number': f_number}).run(conn)
     r.table('USERS').get(u_id).update({'topics': topics}).run(conn)
+    return (topic in topics)
 
 def topic_follower_number(topic):
     f_number =r.table('TOPICS').get(topic).run(conn)['f_number']
@@ -471,6 +477,7 @@ def update_topic_follow_number():
     r.table('TOPICS').get('چجو').update({'f_number': c_f_num}).run(conn)
     r.table('TOPICS').get('متفرقه').update({'f_number': o_f_num}).run(conn)
 
+
 if __name__ == '__main__' :
     create_database()
-    # update_topic_follow_number()
+    r.table('TEMP').delete().run(conn)

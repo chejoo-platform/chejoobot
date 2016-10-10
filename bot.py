@@ -31,7 +31,9 @@ def start(bot, update):
         db.activate(from_user.id)
     else:
         db.insert_new_user(from_user.id, from_user.first_name, from_user.last_name, from_user.username)
-        bot.sendMessage(update.message.chat_id, text =" سلام {} جان خوش اومدی 😍\n.".format(from_user.first_name), reply_markup=constants.KEYBOARD_MAIN)
+        bot.sendMessage(update.message.chat_id, text =" سلام {} جان خوش آمدی 😍\n.".format(from_user.first_name), reply_markup=constants.KEYBOARD_MAIN)
+        topics.select_topics(bot, from_user.id)
+        bot.sendMessage(update.message.chat_id, text =" اولین سوالی که واسه همه پیش میاد  اینه که این بات چجوری کار میکنه اگه میخوای جوابشو بدونی روی /q4827 بزن\n.", reply_markup=constants.KEYBOARD_MAIN)
     return constants.STATE_MAIN
 
 def registered_user(bot, update):
@@ -41,7 +43,7 @@ def registered_user(bot, update):
         bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب نمایید', reply_markup=constants.KEYBOARD_MAIN)
     else:
         db.insert_new_user(from_user.id, from_user.first_name, from_user.last_name, from_user.username)
-        bot.sendMessage(update.message.chat_id, text =" سلام {} جان خوش اومدی 😍\n.".format(from_user.first_name), reply_markup=constants.KEYBOARD_MAIN)
+        bot.sendMessage(update.message.chat_id, text =" سلام {} جان خوش آمدی 😍\n.".format(from_user.first_name), reply_markup=constants.KEYBOARD_MAIN)
     return constants.STATE_MAIN
 
 def stop_this_fucking_bot(bot, update):
@@ -51,12 +53,12 @@ def main_menue_handler(bot, update):
     message = update.message.text
     if (message == 'سوالای اخیر'):
         bot.sendMessage(update.message.chat_id,
-                        text = 'از موضوعات زیر یکی رو انتخاب کن', reply_markup=constants.KEYBOARD_READ)
+                        text = 'از موضوعات زیر یکی را انتخاب کنید', reply_markup=constants.KEYBOARD_READ)
         db.unactivate(update.message.chat_id)
         return constants.STATE_READ
     elif (message == '🤔 از چجو بپرس'):
         bot.sendMessage(update.message.chat_id,
-                        text = ' سوال خودت رو وارد کن یا اگه سوال نداری /skip رو بزن\n.', reply_markup=constants.KEYBOARD_ASK)
+                        text = ' سوال خود را وارد کن اگر منصرف شدی /skip رو بزن\n.', reply_markup=constants.KEYBOARD_ASK)
         db.unactivate(update.message.chat_id)
         return constants.STATE_ASK
     elif (message == '👤 پروفایل'):
@@ -64,8 +66,10 @@ def main_menue_handler(bot, update):
         return constants.STATE_MAIN
     elif (message == '⚙ تنظیمات'):
         topics.select_topics(bot, update.message.chat_id)
+    elif (message == ''):
+        show_how_to_work_with_bot(bot, update.message.chat_id)
     else:
-        bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب کن', reply_markup=constants.KEYBOARD_MAIN)
+        bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب کنید', reply_markup=constants.KEYBOARD_MAIN)
 
 def commanhandler(bot, update):
     chat_id = update.message.chat_id
@@ -79,9 +83,17 @@ def commanhandler(bot, update):
         else:
             questions.show_question(q_id, chat_id, bot)
     elif (command_pre == 'u'):
-        users.show_user(bot, chat_id, int(command_post))
+        if command_post.isdigit():
+            users.show_user(bot, chat_id, int(command_post))
+        else:
+            user_id = db.get_user_by_username(command_post)
+            users.show_user(bot, chat_id, user_id)
+
+    elif update.message.text == '/sendupdatemessage':
+        bot.sendMessage(chat_id=chat_id,text='پیام آپدیت بات رو وارد کن', reply_markup=constants.KEYBOARD_MAIN)
+        return constants.STATE_UPDATE
     else:
-        bot.sendMessage(chat_id=chat_id,text='لطفا از منوی زیر انتخاب کن', reply_markup=constants.KEYBOARD_MAIN)
+        bot.sendMessage(chat_id=chat_id,text='لطفا از منوی زیر انتخاب کنید', reply_markup=constants.KEYBOARD_MAIN)
     return constants.STATE_MAIN
 
 def wrong_call_handler(bot, update):
@@ -89,7 +101,7 @@ def wrong_call_handler(bot, update):
     bot.sendMessage(chat_id=query.from_user.id, text='لطفا /skip را بزنید', reply_markup = constants.KEYBOARD_ANSWER_CANCEL)
 
 def skip(bot, update):
-    bot.sendMessage(chat_id=update.message.chat_id, text='برگشتی به منوی اصلی', reply_markup = constants.KEYBOARD_MAIN)
+    bot.sendMessage(chat_id=update.message.chat_id, text='برگشتید به منوی اصلی', reply_markup = constants.KEYBOARD_MAIN)
     return constants.STATE_MAIN
 
 def error_callback(bot, update, error):
@@ -105,6 +117,25 @@ def error_callback(bot, update, error):
         print('NetworkError')
     except TelegramError:
         print('TelegramError')
+
+def show_how_to_work_with_bot(bot, u_id):
+    bot.sendMessage(chat_id=u_id, text= constants.HOW_TO_WORK_WITH_BOT)
+
+def update_message(bot, update):
+    for u in db.get_users():
+        try:
+            bot.sendMessage(chat_id=u['id'], text = update.message.text)
+        except:
+            db.unactivate(u['id'])
+    bot.sendMessage(chat_id=update.message.chat_id,text='پیام آپدیت بات برای همه ارسال شد', reply_markup=constants.KEYBOARD_MAIN)
+    return constants.STATE_MAIN
+
+def send_bot_update_message_to_all_users(bot):
+    for u in db.get_users():
+        try:
+            bot.sendMessage(chat_id=u['id'], text = constants.BOT_UPDATE_MESSAGE)
+        except:
+            db.unactivate(u['id'])
 
 def main():
     #db.create_database()
@@ -149,6 +180,8 @@ def main():
             constants.STATE_READ: [MessageHandler([Filters.text], questions.show),
                                    CommandHandler('skip', skip),
                                    CallbackQueryHandler(wrong_call_handler)],
+
+            constants.STATE_UPDATE: [MessageHandler([Filters.text], update_message)]
         },
         fallbacks=[CommandHandler('stop', stop_this_fucking_bot)])
 
@@ -156,9 +189,6 @@ def main():
 
     # on different commands - answer in Telegrm
     # add conversation handler
-    # dp.add_handler(conv_question)
-    # dp.add_handler(conv_answer)
-    # dp.add_handler(cal_handler)
     dp.add_handler(main_conversationhandler)
     # on noncommand i.e message - echo the message on Telegram
     # log all errors

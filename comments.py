@@ -11,7 +11,11 @@ def show_comments(bot, chat_id, ann_id):
     text = constants.TEXT_COMMENT+'\nآخرین کامنت ها:'
     for c in comments:
         user = db.get_user(c['u_id'])
-        text += '\n\n🖇'+c['text']+'\nfrom @'+ user['username']
+        if (user['username'] == ''):
+            commenter = '/u'+ str(user['id'])
+        else:
+            commenter = '/u'+user['username']
+        text += '\n\n🖇'+c['text']+'\nfrom '+ commenter
     bot.sendMessage(chat_id, text = text)
 
 def insert_comment(bot, update):
@@ -37,7 +41,6 @@ def cancel_comment(bot, update):
     bot.sendMessage(chat_id = u_id,\
                     text = 'کامنتی ثبت نشد',
                     reply_markup=constants.KEYBOARD_MAIN)
-
     db.activate(update.message.chat_id)
     return constants.STATE_MAIN
 

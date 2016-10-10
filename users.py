@@ -12,14 +12,14 @@ def show_user(bot, chat_id, u_id, callback = False, msg_id = 0):
         username = '@'+user['username']
     q_numbers = str(user['q_numbers'])
     a_numbers = str(user['a_numbers'])
-    followers_number = str(len(user['followers']))
-    user_info = username + '\nپروفایل '+ user['first_name'] + '\n🤔تعداد سوال:  ' + q_numbers + '\n📝تعداد پاسخ:  '+ a_numbers+'\n⭐ستاره:  ' + str(user['score']) + '\nسطح:  ' + str(user['level'])
+    followers_number = len(user['followers'])
+    user_info = username + '\nپروفایل '+ user['first_name'] + '\n🤔تعداد سوال:  ' + q_numbers + '\n📝تعداد پاسخ:  '+ a_numbers+'\n⭐ستاره:  ' + str(user['score']) + '\nسطح:  ' + str(user['level'])+'\n.'
     if chat_id in user['followers']:
-        text_like = '❤️'
+        text_like = 'شما + '+str(followers_number-1)+' ♥️'
     else:
-        text_like = '💔'
+        text_like = '♥️ '+str(followers_number)
     buttons = [[
-        InlineKeyboardButton(text=text_like+' '+followers_number,
+        InlineKeyboardButton(text=text_like,
                              callback_data='followUser_'+str(u_id))
     ]]
     keyboard = InlineKeyboardMarkup(buttons)

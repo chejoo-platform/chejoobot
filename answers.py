@@ -9,6 +9,7 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
     answers = db.get_answers(q_id)
     count = len(answers)
     ans = answers[i]
+    # ans_rank = constants.ANSWER_RANK[i]
     an_id = ans['id']
     comments = ans['comments']
     comments_number = len(comments)
@@ -25,29 +26,29 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
             text_downvote = '👎🏻'
     writer = db.get_user(writer_id)
     if (writer['username'] == ''):
-        writer = writer['first_name']+ ' '+writer['last_name']
+        writer = '/u'+str(writer_id)
     else:
-        writer = '@'+writer['username']
+        writer = '/u'+writer['username']
     text = constants.TEXT_ANSWER+'\n'+'🖊 جواب'+ ans['text'] + str('\n\nfrom ')+writer
     next_data = 'nextanswer_'+str(q_id)+'_'+str(i+1)
     next_text = 'جواب بعد'
-    befor_data = 'nextanswer_'+str(q_id)+'_'+str(i-1)
+    befor_data = 'beforanswer_'+str(q_id)+'_'+str(i-1)
     befor_text = 'جواب قبل'
     if ((i+1) == count):
-        next_data = 'notavailable'
-        next_text =''
+        next_data = 'notavailable0'
+        # next_text =''
     if (i == 0):
-        befor_data = 'notavailable'
-        befor_text =''
+        befor_data = 'notavailable1'
+        # befor_text =''
     buttons = [[
-        InlineKeyboardButton(text=befor_text,\
-                             callback_data=befor_data),
+        InlineKeyboardButton(text=next_text,\
+                             callback_data=next_data),
         InlineKeyboardButton(text=text_upvote+' '+str(upvotes),\
                              callback_data='upvote_'+ str(q_id)+'_'+ an_id + '_'+ str(i)),
         InlineKeyboardButton(text=text_downvote+' '+str(downvotes),\
                              callback_data='downvote_'+ str(q_id)+'_'+ an_id + '_'+ str(i)),
-        InlineKeyboardButton(text=next_text,\
-                             callback_data=next_data)
+        InlineKeyboardButton(text=befor_text,\
+                             callback_data=befor_data)
          ],
     [InlineKeyboardButton(text= 'کامنتها '+ str(comments_number),
                           callback_data='comments_'+an_id+'_'+str(comments_number)+'_'+q_id)]]
@@ -80,9 +81,9 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
             text_downvote = '👎🏻'
     writer = db.get_user(writer_id)
     if (writer['username'] == ''):
-        writer = writer['first_name']+ ' '+writer['last_name']
+        writer = '/u'+str(writer_id)
     else:
-        writer = '@'+writer['username']
+        writer = '/u'+writer['username']
     text = constants.TEXT_QUESTION+'\n'+'🤔سوال: '+ q_text +'\n لینک: '+ q_link+'\n'+constants.TEXT_ANSWER+'\n✏️جواب : '+ ans['text'] + '\n\nfrom '+writer
     buttons = [[
         InlineKeyboardButton(text=text_upvote+' '+str(upvotes),\
@@ -104,7 +105,8 @@ def edit_answer(bot, update):
     u_id = update.message.chat_id
     db.update_answer_of_temp(u_id, my_answer)
     bot.sendMessage(chat_id=u_id,\
-                    text='اگر پاسختان تمام شده روی /done بزنید در غیر اینصورت ادامه جوابتان را وارد نمایید و اگر از جواب دادن منصرف شده اید میتوانید /skip را بزنید: ', reply_markup = constants.KEYBOARD_ANSWER_INSERT)
+                    text='اگر جوابتان پایان یافته روی /done بزنید در غیر اینصورت ادامه جوابتان را وارد نمایید اگر از جواب دادن منصرف شده اید میتوانید /skip را بزنید: ',
+                    reply_markup = constants.KEYBOARD_ANSWER_INSERT)
     # db.insert_new_answer(q_id, answer)
     db.unactivate(u_id)
     return constants.STATE_ANSWER_EDIT
@@ -114,7 +116,8 @@ def insert_answer(bot, update):
     u_id = update.message.chat_id
     db.update_answer_of_temp(u_id, my_answer)
     bot.sendMessage(chat_id=u_id,\
-                    text='اگر پاسختان تمام شده روی /done بزنید در غیر اینصورت ادامه جوابتان را وارد نمایید و اگر از جواب دادن منصرف شده اید میتوانید /skip را بزنید: ', reply_markup = constants.KEYBOARD_ANSWER_INSERT)
+                    text='اگر جوابتان پایان یافته روی /done بزنید😊 در غیر اینصورت ادامه جوابتان را وارد نمایید😚 اگر از جواب دادن منصرف شده اید میتوانید /skip را بزنید😒: ',
+                    reply_markup = constants.KEYBOARD_ANSWER_INSERT)
     db.unactivate(u_id)
     return constants.STATE_ANSWER_INSERT
 
@@ -122,16 +125,16 @@ def finish_answer(bot, update):
     u_id = update.message.chat_id
     qid, an_id = db.push_answer_form_temp_to_answers(u_id)
     db.upvote_answer(an_id, u_id)
-    bot.sendMessage(chat_id = u_id, text=' جواب شما با موفقیت ثبت شد', reply_markup= constants.KEYBOARD_MAIN)
+    bot.sendMessage(chat_id = u_id, text=' جواب شما با موفقیت ثبت شد 🤗', reply_markup= constants.KEYBOARD_MAIN)
     db.activate(update.message.chat_id)
-    questions.show_question_to_followers(qid, an_id, bot)
+    questions.show_question_to_followers(qid, an_id, bot, u_id)
     return constants.STATE_MAIN
 
 def cancel_answer(bot, update):
     u_id = update.message.chat_id
     qid = db.del_answer_from_temp(u_id)
     bot.sendMessage(chat_id = u_id,\
-                    text = 'جوابی ثبت نشد',
+                    text = 'جوابی ثبت نشد 🙄',
                     reply_markup=constants.KEYBOARD_MAIN)
     questions.show_question(qid, u_id, bot, False)
     db.activate(update.message.chat_id)
@@ -140,7 +143,7 @@ def cancel_answer(bot, update):
 def finish_edit_answer(bot, update):
     u_id = update.message.chat_id
     qid, anid = db.push_answer_form_temp_to_answers_edit_mod(u_id)
-    bot.sendMessage(chat_id = u_id, text=' جواب ادیت شده ی شما با موفقیت ثبت شد', reply_markup= constants.KEYBOARD_MAIN)
+    bot.sendMessage(chat_id = u_id, text=' جواب ادیت شده ی شما با موفقیت ثبت شد 🤗', reply_markup= constants.KEYBOARD_MAIN)
     show_answer(bot, u_id, qid, anid, True)
     db.activate(update.message.chat_id)
     # questions.show_question(qid, u_id, bot)
@@ -150,7 +153,7 @@ def cancel_edit_answer(bot, update):
     u_id = update.message.chat_id
     qid = db.del_answer_from_temp(u_id)
     bot.sendMessage(chat_id = u_id,\
-                    text = 'جواب شما بدون تغییر باقی ماند',
+                    text = 'جواب شما بدون تغییر باقی ماند 😎',
                     reply_markup=constants.KEYBOARD_MAIN)
     questions.show_question(qid, u_id, bot, False)
     db.activate(update.message.chat_id)

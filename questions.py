@@ -18,13 +18,13 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
     asker = db.get_user(asker_id)
     like = len(q['followers'])
     if chat_id in q['followers']:
-        text_like = '❤️'
+        text_like = 'شما + '+str(like-1)+' ♥️'
     else:
-        text_like = '💔'
+        text_like = '♥️ '+str(like)
     if (asker['username'] == ''):
-        asker = asker['first_name']+ ' '+asker['last_name']
+        asker = '/u'+str(asker_id)
     else:
-        asker = '@'+asker['username']
+        asker = '/u'+asker['username']
     # asker = '/u'+str(asker_id)
     if db.user_have_answered(q_id, chat_id):
         answer_text = 'ویرایش جواب'
@@ -36,7 +36,7 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
     buttons = [[
         InlineKeyboardButton(text=answer_text,\
                              callback_data=answer_callback_data),
-        InlineKeyboardButton(text=text_like+' '+str(like),
+        InlineKeyboardButton(text=text_like,
                              callback_data='likequestion_'+str(q_id))],
                [InlineKeyboardButton(text=delete_text,
                                      callback_data='deleteQuestion_'+ str(q_id))
@@ -60,13 +60,13 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
 
 def insert_question(bot, update):
     msg = update.message
-    if msg.text == 'سوالای اخیر' or msg.text == '🤔 از چجو بپرس':
+    if msg.text == 'سوالای اخیر' or msg.text == '🤔 از چجو بپرس' or msg.text == '⚙ تنظیمات' or msg.text == '👤 پروفایل':
         return constants.STATE_ASK
     question_id = str(msg.message_id)+'-'+str(msg.chat_id)
     db.insert_question_to_temp(msg.message_id, msg.text, msg.chat_id, msg.date)
     # db.insert_new_question(msg.message_id, msg.text, msg.chat_id, msg.date)
     bot.sendMessage(update.message.chat_id,
-                    text = "لطفا موضوع سوالت رو از موارد زیر انتخاب کن یا اگه منصرف شدی /skip رو بزن: ",
+                    text = "لطفا موضوع سوال خود را از موارد زیر انتخاب کنید یا اگر منصرف شده اید /skip را بزنید  😎",
                     reply_markup = constants.KEYBOARD_TOPIC)
     # bot.sendMessage(update.message.chat_id,
                     # text = " سوالت با موفقیت ثبت شد",
@@ -76,14 +76,14 @@ def insert_question(bot, update):
 def finish_question(bot, update):
     u_id = update.message.chat_id
     q_id = db.push_question_from_temp_to_questions(u_id)
-    bot.sendMessage(chat_id = u_id, text='سوال شما با موفقیت ثبت شد', reply_markup= constants.KEYBOARD_MAIN)
+    bot.sendMessage(chat_id = u_id, text='سوالت با موفقیت ثبت شد 🤓', reply_markup= constants.KEYBOARD_MAIN)
     db.activate(update.message.chat_id)
     show_question_to_all_topic_followers(q_id, bot)
     return constants.STATE_MAIN
 
 def skip_question(bot, update):
     bot.sendMessage(update.message.chat_id,\
-                    text ="سوالی ثبت نشد", reply_markup= constants.KEYBOARD_MAIN)
+                    text ="سوالی ثبت نشد ☹️", reply_markup= constants.KEYBOARD_MAIN)
     db.empty_temp(update.message.chat_id)
     db.activate(update.message.chat_id)
     return constants.STATE_MAIN
@@ -93,17 +93,28 @@ def show_random_question(bot, user_id):
     i = randint(0, len(ques)-1)
     show_question(ques[i]['id'], user_id, bot)
 
-def show_question_to_followers(qid, anid, bot):
+def show_question_to_followers(qid, anid, bot, user_id):
     followers = db.get_followers_question(qid)
+    # user_followers = db.get_followers_user(user_id)
     for user in followers:
         if db.user_is_active(user):
             try:
-                bot.sendMessage(user, text='سوالی که قبلا لایک کرده بودید جواب داده شد')
+                bot.sendMessage(user, text='سوالی که قبلا لایک کرده بودید جواب داده شد 😍')
                 # show_question(qid, user, bot, withans = True)
                 answers.show_answer(bot, user, qid, anid, True)
             except:
                 print('exeption')
                 db.unactivate(user)
+
+    # for user in user_followers :
+    #     if db.user_is_active(user):
+    #         try:
+    #             bot.sendMessage(user, text='سوالی که قبلا لایک کرده بودید جواب داده شد 😍')
+    #             # show_question(qid, user, bot, withans = True)
+    #             answers.show_answer(bot, user, qid, anid, True)
+    #         except:
+    #             print('exeption')
+    #             db.unactivate(user)
 
 def show_question_to_all_topic_followers(qid, bot):
     topic = db.get_topic_of_question(qid)
@@ -112,7 +123,7 @@ def show_question_to_all_topic_followers(qid, bot):
     print(all)
     for user in all:
         try:
-            bot.sendMessage(user['id'], text='سوال جدید زیر پرسیده شده')
+            bot.sendMessage(user['id'], text='سوال جدید زیر در موضوع {} پرسیده شده 🤓'.format(topic))
             print('yes')
             show_question(qid, user['id'], bot, False)
         except:
@@ -124,23 +135,23 @@ def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0
     questions = db.get_last_questions(number, skip, topic)
     if (len(questions) < number ):
         next_text ='صفحه بعد'
-        next_call ='notavailable'
+        next_call ='notavailable0'
     else:
         next_text ='صفحه بعد'
         next_call ='nextpage'+'_'+str(i+1)+'_'+topic
     if (i == 0):
         before_text = 'صفحه قبل'
-        before_call ='notavailable'
+        before_call ='notavailable1'
     else:
         before_text = 'صفحه قبل'
-        before_call = 'nextpage'+'_'+str(i-1)+'_'+topic
+        before_call = 'beforpage'+'_'+str(i-1)+'_'+topic
 
     last_questions_text = str(skip+1)+' تا '+str(skip+number)+'  سوال اخیر:\n'
     buttons = [[
-        InlineKeyboardButton(text=before_text,
-                             callback_data= before_call),
         InlineKeyboardButton(text=next_text,
-                             callback_data=next_call)
+                             callback_data=next_call),
+        InlineKeyboardButton(text=before_text,
+                             callback_data= before_call)
          ]]
     keyboard = InlineKeyboardMarkup(buttons)
 
@@ -149,7 +160,7 @@ def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0
             q_number = 0
         else:
             q_number = len(q['answers'])
-        text = '\n🤔سوال: '+ q['question']+'؟\nلینک: /q'+str(q['msg_id'])+'\n❤️تعداد دنبال کنندگان : '+ str(len(q['followers'])) +'\n📝تعداد جواب ها: '+ str(q_number)+'\n.'
+        text = '\n🤔سوال: '+ q['question']+'؟\nلینک: /q'+str(q['msg_id'])+'\n♥️تعداد دنبال کنندگان : '+ str(len(q['followers'])) +'\n📝تعداد جواب ها: '+ str(q_number)+'\n.'
         last_questions_text += text
 
     if callback:
@@ -175,8 +186,8 @@ def show(bot, update):
         return constants.STATE_MAIN
 
     elif (message == '⬅️'):
-        bot.sendMessage(update.message.chat_id, text='برگشتی به منوی اصلی', reply_markup = constants.KEYBOARD_MAIN)
+        bot.sendMessage(update.message.chat_id, text='برگشتی به منوی اصلی 😃', reply_markup = constants.KEYBOARD_MAIN)
         db.activate(update.message.chat_id)
         return constants.STATE_MAIN
     else:
-        bot.sendMessage(update.message.chat_id, text='لطفا از منوی زیر انتخاب کن😆', reply_markup = constants.KEYBOARD_READ)
+        bot.sendMessage(update.message.chat_id, text='لطفا از منوی زیر انتخاب کن 😆', reply_markup = constants.KEYBOARD_READ)

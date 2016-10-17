@@ -52,11 +52,16 @@ def show_comment_to_upvoters(bot, c_id, q_id, u_id):
     q_link = '/q'+ str(question['msg_id'])
     answer = db.get_answer(an_id)['text']
     comment_text = comment['text']
-    commenter = comment['u_id']
-    username = db.get_user(commenter)['username']
+    commenter_id = comment['u_id']
+    commenter = db.get_user(commenter_id)
+    if (commenter['username'] == ''):
+        commenter = '/u'+str(commenter_id)
+    else:
+        commenter = '/u'+commenter['username']
+
     for user in db.get_answer_upvoters(an_id):
         try:
-            bot.sendMessage(user, text= 'برای جوابی که لایک کرده بودید کامنتی جدید گذاشته شده\n'+constants.TEXT_QUESTION+'\n 🤔سوال: \n'+ q_text +'\n لینک سوال:'+ q_link +'\n'+constants.TEXT_ANSWER+'\n📝جواب:'+answer+'\n'+constants.TEXT_COMMENT+'\n🖇کامنت جدید:\n' +comment_text+'\nfrom @'+username)
+            bot.sendMessage(user, text= 'برای جوابی که لایک کرده بودید کامنتی جدید گذاشته شده\n'+constants.TEXT_QUESTION+'\n 🤔سوال: \n'+ q_text +'\n لینک سوال:'+ q_link +'\n'+constants.TEXT_ANSWER+'\n📝جواب:'+answer+'\n'+constants.TEXT_COMMENT+'\n🖇کامنت جدید:\n' +comment_text+'\nfrom '+commenter)
         except:
             print('user_has_stopped_the_bot')
 

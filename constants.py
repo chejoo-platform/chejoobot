@@ -13,6 +13,7 @@ DATABASE_USER = 'root'
 DATABASE_PASS = ''
 DATABASE_TABLES = ['USERS', 'QUESTIONS', 'ANSWERS', 'TOPICS', 'COMMENTS', 'TEMP', 'ADMINS']
 USER_LEVELES = ['هیچی', '🐜', '🐞']
+LEVEL_STAGES = [10, 20, 30, 50, 80, 130, 210, 340, 560, 910]
 STATE_MAIN = 0
 STATE_ASK = 1
 STATE_ANSWER_INSERT = 2
@@ -31,7 +32,8 @@ BOT_UPDATE_MESSAGE = '✨✨✨\t✨✨✨\n\nسلام عزیزان با فید�
 ANSWER_RANK = ['بهترین جواب','دومین جواب برتر', 'سومین جواب برتر']
 KEYBOARD_MAIN = ReplyKeyboardMarkup([
     [KeyboardButton(text='🤔 از چجو بپرس'),KeyboardButton(text='سوالای اخیر')],
-    [KeyboardButton(text='⚙ تنظیمات'), KeyboardButton(text='👤 پروفایل')]
+    [KeyboardButton(text='⚙ تنظیمات'), KeyboardButton(text='👤 پروفایل')],
+    [KeyboardButton(text='🎗🎗🎗رنکینگ کاربران🎗🎗🎗')]
 ],
                                     resize_keyboard = True)
 KEYBOARD_ASK = ReplyKeyboardMarkup([

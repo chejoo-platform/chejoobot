@@ -162,6 +162,32 @@ def call_handler(bot, update):
         bot.answerCallbackQuery(query.id, text='صفحه قبل لود شد')
         return constants.STATE_MAIN
 
+    elif (splited_query[0] == 'nextpageuserquestions'):
+        ii = int(splited_query[1])
+        user_id = int(splited_query[2])
+        questions.show_questions_asked_by_user(bot,
+                                               query.from_user.id,
+                                               user_id,
+                                               ii,
+                                               limit = 5,
+                                               callback = True,
+                                               m_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='صفحه بعد لود شد')
+        return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'beforepageuserquestions'):
+        ii = int(splited_query[1])
+        user_id = int(splited_query[2])
+        questions.show_questions_asked_by_user(bot,
+                                               query.from_user.id,
+                                               user_id,
+                                               ii,
+                                               limit = 5,
+                                               callback = True,
+                                               m_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='صفحه قبل لود شد')
+        return constants.STATE_MAIN
+
     elif (splited_query[0] == 'followUser'):
         u_id = int(splited_query[1])
         fo_or_unfo = db.follow_or_unfollow_user(u_id, query.from_user.id)
@@ -199,8 +225,30 @@ def call_handler(bot, update):
         fo_or_unfo = db.follow_or_unfollow_topic(query.from_user.id, splited_query[1])
         topics.select_topics(bot, query.from_user.id, True, m_id=query.message.message_id)
         if fo_or_unfo:
-            bot.answerCallbackQuery(query.id, text='موضوع {} به موضوعات مورد علاقه شما اضافه شد هرکس در این موضوع سوالی مطرح کند برایتان ارسال میشود'.format(splited_query[1]))
+            bot.answerCallbackQuery(query.id, text='موضوع {} به علاقه مندی های شما اضافه شد'.format(splited_query[1]))
         else:
-            bot.answerCallbackQuery(query.id, text='موضوع {} از موضوعات مورد علاقه شما حذف گردید'.format(splited_query[1]))
+            bot.answerCallbackQuery(query.id, text='موضوع {} از علاقه مندی های شما حذف گردید'.format(splited_query[1]))
+
+    elif (splited_query[0] == 'nextuser'):
+        users.show_top_users(bot, query.from_user.id, i = int(splited_query[1]), callback = True, msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='کاربر بعد نمایش داده شد')
+        return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'beforuser'):
+        users.show_top_users(bot, query.from_user.id, i = int(splited_query[1]), callback = True, msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='کاربر قبل نمایش داده شد')
+        return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'followUserintop'):
+        u_id = int(splited_query[1])
+        fo_or_unfo = db.follow_or_unfollow_user(u_id, query.from_user.id)
+        users.show_top_users(bot, query.from_user.id, i = int(splited_query[2]),
+                        callback = True, msg_id = query.message.message_id)
+        if fo_or_unfo:
+            bot.answerCallbackQuery(query.id, text='کاربر را دنبال کردی')
+        else:
+            bot.answerCallbackQuery(query.id, text='دیگر کاربر را دنبال نمیکنی')
+        return constants.STATE_MAIN
+
     else:
         return constants.STATE_MAIN

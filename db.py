@@ -36,8 +36,8 @@ def insert_new_user(telid, first_name, last_name, username):
                 'topics': list()}
     r.table("USERS").insert(new_user).run(conn)
     # follow_or_unfollow_topic(telid, 'پلتفرم')
-    # follow_or_unfollow_topic(telid, 'استارتاپ')
-    follow_or_unfollow_topic(telid, 'چجو')
+    follow_or_unfollow_topic(telid, 'استارتاپ')
+    # follow_or_unfollow_topic(telid, 'چجو')
     # follow_or_unfollow_topic(telid, 'متفرقه')
     # conn.close()
 
@@ -108,14 +108,26 @@ def follow_or_unfollow_user(u_id, follower_id):
         # return True
     # conn = connect()
     user = r.table('USERS').get(u_id).run(conn)
+    follower_level = r.table('USERS').get(follower_id).run(conn)['level']
+    score = user['score']
     followers = set(user['followers'])
     if follower_id in followers:
         followers.remove(follower_id)
+        score -= 2 * follower_level
     else:
         followers.add(follower_id)
-    r.table('USERS').get(u_id).update({'followers': list(followers)}).run(conn)
+        score += 2 * follower_level
+    r.table('USERS').get(u_id).update({'followers': list(followers), 'score': score}).run(conn)
+    update_level_of_user(u_id)
     return (follower_id in followers)
     # conn.close()
+
+def get_ranked_user(sk):
+    user = list(r.table('USERS').order_by(r.desc('score')).skip(sk).limit(1).run(conn))[0]
+    return user
+
+def get_user_numbers():
+    return len(list(r.table('USERS').run(conn)))
 
 def insert_new_question(idd, text, userid, date):
     # conn = connect()
@@ -128,7 +140,7 @@ def insert_new_question(idd, text, userid, date):
 
 def insert_question_to_temp(msg_id, text, u_id, date):
     # conn = connect()
-    new_question = {"id": u_id ,"msg_id": msg_id, "question": text, "user_id": u_id, 'date': r.now(), 'followers': [u_id], 'answers': list(), 'topics': list()}
+    new_question = {"id": u_id ,"msg_id": msg_id, "question": text, "user_id": u_id, 'date': r.now(), 'followers': list(), 'answers': list(), 'topics': list()}
     r.table('TEMP').insert(new_question).run(conn)
     # conn.close()
 
@@ -158,13 +170,20 @@ def empty_temp(u_id):
 
 def follow_or_unfollow_question(q_id, user_id):
     # conn = connect()
-    questions = r.table('QUESTIONS').get(q_id).run(conn)
-    followers = set(questions['followers'])
+    question = r.table('QUESTIONS').get(q_id).run(conn)
+    asker = r.table('USERS').get(question['user_id']).run(conn)
+    follower = r.table('USERS').get(user_id).run(conn)
+    score = asker['score']
+    followers = set(question['followers'])
     if user_id in followers:
         followers.remove(user_id)
+        score -= follower['level']
     else:
         followers.add(user_id)
+        score += follower['level']
     r.table('QUESTIONS').get(q_id).update({'followers': list(followers)}).run(conn)
+    r.table('USERS').get(question['user_id']).update({'score': score}).run(conn)
+    update_level_of_user(question['user_id'])
     return (user_id in followers)
     # conn.close()
 
@@ -198,6 +217,9 @@ def delete_question(q_id):
     user.update({'q_numbers': q_numbers }).run(conn)
     # conn.close()
 
+def delete_answers_of_question(q_id):
+    r.table('ANSWERS').filter({'q_id': q_id}).delete().run(conn)
+
 def get_last_questions(n, s, topic):
     # conn = connect()
     if (topic == 'همه'):
@@ -210,6 +232,10 @@ def get_last_questions(n, s, topic):
 def get_topic_of_question(q_id):
     topics = r.table('QUESTIONS').get(q_id).run(conn)['topics']
     return topics[0]
+
+def get_questions_of_user(u_id, s, n):
+    questions = r.table('QUESTIONS').filter({'user_id': u_id}).order_by(r.desc('date')).skip(s).limit(n).run(conn)
+    return questions
 
 def insert_answer_to_temp_edit(user_id, q_id):
     # conn = connect()
@@ -320,6 +346,7 @@ def upvote_answer(an_id, user_id):
     r.table('ANSWERS').get(an_id).update({'downvotes': downvotes, 'downvoters': list(downvoters),
                                           'upvoters': list(upvoters), 'upvotes': upvotes,
                                           'up_and_down': up_and_down}).run(conn)
+    update_level_of_user(writer_id)
     # conn.close()
     return upvotes
 
@@ -348,9 +375,11 @@ def downvote_answer(an_id, user_id):
         downvoters.add(user_id)
         downvotes += user_level
         up_and_down -= user_level
+    r.table('USERS').get(writer_id).update({'score': writer_score}).run(conn)
     r.table('ANSWERS').get(an_id).update({'downvotes': downvotes, 'downvoters': list(downvoters),
                                           'upvoters': list(upvoters), 'upvotes': upvotes,
                                           'up_and_down': up_and_down}).run(conn)
+    update_level_of_user(writer_id)
     # conn.close()
     return upvotes
 
@@ -377,6 +406,12 @@ def get_answer(an_id):
 def get_answer_upvoters(an_id):
     upvoters = r.table('ANSWERS').get(an_id).run(conn)['upvoters']
     return upvoters
+
+def get_best_answer_of_this_user(u_id):
+    answer = list(r.table('ANSWERS').filter({'u_id': u_id}).order_by(r.desc('up_and_down')).limit(1).run(conn))
+    if len(answer) == 0:
+        return False
+    return answer[0]
 
 def get_comments(an_id):
     # conn = connect()
@@ -440,21 +475,15 @@ def topic_follower_number(topic):
 def update_users():
     acitvate_all_users()
     for user in get_users():
-        q_numbers = len(list(r.table('QUESTIONS').filter({'user_id': user['id']}).run(conn)))
-        a_numbers = len(list(r.table('ANSWERS').filter({'u_id': user['id']}).run(conn)))
-        r.table('USERS').get(user['id']).update({'a_numbers': a_numbers, 'q_numbers': q_numbers}).run(conn)
-
-def update_questions():
-    for q in r.table('QUESTIONS').run(conn):
-        q_id = q['id']
-        r.table('QUESTIONS').get(q_id).update({'answers': list()}).run(conn)
-
-    for a in r.table("ANSWERS").run(conn):
-        an_id = a['id']
-        q_id = a['q_id']
-        answers = r.table('QUESTIONS').get(q_id).run(conn)['answers']
-        answers.append(an_id)
-        r.table('QUESTIONS').get(q_id).update({'answers': answers}).run(conn)
+        score = 0
+        for q in r.table('QUESTIONS').filter({'user_id': user['id']}).run(conn):
+            score += len(q['followers'])
+        for a in r.table('ANSWERS').filter({'u_id': user['id']}).run(conn):
+            score += a['upvotes']
+        for u in user['followers']:
+            f_level = r.table('USERS').get(u).run(conn)['level']
+            score += 2 * f_level
+        r.table('USERS').get(user['id']).update({'score': score}).run(conn)
 
 def delete_answers_without_questions():
     for a in r.table("ANSWERS").run(conn):
@@ -462,10 +491,6 @@ def delete_answers_without_questions():
         an_id = a['id']
         if r.table('QUESTIONS').get(q_id).run(conn) == None:
             r.table('ANSWERS').get(an_id).delete().run(conn)
-
-def insert_empty_topic_to_old_questions():
-    for q in r.table('QUESTIONS').run(conn):
-        r.table('QUESTIONS').get(q['id']).update({'topics': list()}).run(conn)
 
 def update_topic_follow_number():
     p_f_num = len(list(r.table('USERS').filter(lambda user: user['topics'].contains('پلتفرم')).run(conn)))
@@ -477,7 +502,42 @@ def update_topic_follow_number():
     r.table('TOPICS').get('چجو').update({'f_number': c_f_num}).run(conn)
     r.table('TOPICS').get('متفرقه').update({'f_number': o_f_num}).run(conn)
 
+def get_level(score):
+    if score < constants.LEVEL_STAGES[0]:
+        return 1
+    elif score < constants.LEVEL_STAGES[1]:
+        return 2
+    elif score < constants.LEVEL_STAGES[2]:
+        return 3
+    elif score < constants.LEVEL_STAGES[3]:
+        return 4
+    elif score < constants.LEVEL_STAGES[4]:
+        return 5
+    elif score < constants.LEVEL_STAGES[5]:
+        return 6
+    elif score < constants.LEVEL_STAGES[6]:
+        return 7
+    elif score < constants.LEVEL_STAGES[7]:
+        return 8
+    elif score < constants.LEVEL_STAGES[8]:
+        return 9
+    elif score < constants.LEVEL_STAGES[9]:
+        return 10
+    else:
+        return 11
+
+def update_level_of_user(u_id):
+    u = r.table('USERS').get(u_id).run(conn)
+    level = get_level(u['score'])
+    r.table('USERS').get(u_id).update({'level': level}).run(conn)
+
+def update_levels():
+    for u in r.table('USERS').run(conn):
+        level = get_level(u['score'])
+        r.table('USERS').get(u['id']).update({'level': level}).run(conn)
 
 if __name__ == '__main__' :
     create_database()
     r.table('TEMP').delete().run(conn)
+    delete_answers_without_questions()
+    # update_users()

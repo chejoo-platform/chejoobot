@@ -124,9 +124,10 @@ def insert_answer(bot, update):
 def finish_answer(bot, update):
     u_id = update.message.chat_id
     qid, an_id = db.push_answer_form_temp_to_answers(u_id)
-    db.upvote_answer(an_id, u_id)
+    # db.upvote_answer(an_id, u_id)
     bot.sendMessage(chat_id = u_id, text=' جواب شما با موفقیت ثبت شد 🤗', reply_markup= constants.KEYBOARD_MAIN)
     db.activate(update.message.chat_id)
+    # questions.show_question_to_followers(qid, an_id, bot, u_id)
     questions.show_question_to_followers(qid, an_id, bot, u_id)
     return constants.STATE_MAIN
 
@@ -158,3 +159,11 @@ def cancel_edit_answer(bot, update):
     questions.show_question(qid, u_id, bot, False)
     db.activate(update.message.chat_id)
     return constants.STATE_MAIN
+
+def show_best_answer_of_user(bot, chat_id, user_id):
+    answer = db.get_best_answer_of_this_user(user_id)
+    if answer == False:
+        bot.sendMessage(chat_id, text='این کاربر تا کنون به سوالی پاسخ نداده')
+    else:
+        bot.sendMessage(chat_id, text='بهترین جوابی که این کاربر داده جواب زیر میباشد')
+        show_answer(bot, chat_id, answer['q_id'], answer['id'], show= True)

@@ -33,7 +33,10 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
     else:
         answer_text ='📝جواب میدم'
         answer_callback_data = 'answer_'+str(q_id)+'_'+str(chat_id)
-    delete_text = db.user_is_admin(chat_id)
+    if db.user_is_admin(chat_id):
+        delete_text = 'حذف'
+    else:
+        delete_text = ''
     buttons = [[
         InlineKeyboardButton(text=answer_text,\
                              callback_data=answer_callback_data),

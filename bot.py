@@ -47,6 +47,10 @@ def main_menue_handler(bot, update):
         db.unactivate(update.message.chat_id)
         return constants.STATE_READ
     elif (message == '🤔 از چجو بپرس'):
+        if db.user_is_blocked(update.message.chat_id):
+            bot.sendMessage(update.message.chat_id,
+                            text = ' متاسفم شما بلاک شده اید و نمیتوانید ازین بات استفاده کنید', reply_markup=constants.KEYBOARD_MAIN)
+            return constants.STATE_MAIN
         bot.sendMessage(update.message.chat_id,
                         text = ' سوال خود را وارد کن اگر منصرف شدی /skip رو بزن\n.', reply_markup=constants.KEYBOARD_ASK)
         db.unactivate(update.message.chat_id)

@@ -68,9 +68,9 @@ def user_is_admin(u_id):
     # conn = connect()
     x = r.table("ADMINS").get(u_id).run(conn)
     if x == None:
-        return ''
+        return False
     else:
-        return 'حذف'
+        return True
 
 def add_to_admins(u_id):
     # conn = connect()
@@ -126,8 +126,21 @@ def get_ranked_user(sk):
     user = list(r.table('USERS').order_by(r.desc('score')).skip(sk).limit(1).run(conn))[0]
     return user
 
+def user_is_blocked(u_id):
+    x = r.table("BLOCKED").get(u_id).run(conn)
+    if x == None:
+        return False
+    else:
+        return True
+
 def get_user_numbers():
     return len(list(r.table('USERS').run(conn)))
+
+def block_user(u_id):
+    r.table('BLOCKED').insert({'id': u_id, 'date': r.now()}).run(conn)
+
+def unblock_user(u_id):
+    r.table('BLOCKED').get(u_id).delete().run(conn)
 
 def insert_new_question(idd, text, userid, date):
     # conn = connect()

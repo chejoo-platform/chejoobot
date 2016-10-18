@@ -24,9 +24,15 @@ def show_user(bot, chat_id, u_id, callback = False, msg_id = 0):
         text_like = 'شما + '+str(followers_number-1)+' ♥️'
     else:
         text_like = '♥️ '+str(followers_number)
+    if db.user_is_admin(chat_id):
+        block_text = 'بلاک یا آنبلاک'
+    else:
+        block_text = ''
     buttons = [[
         InlineKeyboardButton(text=text_like,
-                             callback_data='followUser_'+str(u_id))
+                             callback_data='followUser_'+str(u_id))],
+        [InlineKeyboardButton(text=block_text,
+                             callback_data='blockorunblock_'+str(u_id))
     ]]
     keyboard = InlineKeyboardMarkup(buttons)
     if callback:

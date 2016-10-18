@@ -14,7 +14,11 @@ import topics
 def call_handler(bot, update):
     query = update.callback_query
     splited_query = query.data.split("_")
-    print(query)
+
+    # print(query.id)
+    if db.user_is_blocked(query.from_user.id):
+        bot.answerCallbackQuery(query.id, text='متاسفم شما بلاک شده اید و نمیتوانید از این بات استفاده کنید 😶', show_alert=True)
+        return constants.STATE_MAIN
 
     if (splited_query[0] == 'answer'):
         if (db.get_question(splited_query[1]) == None ):
@@ -249,6 +253,16 @@ def call_handler(bot, update):
         else:
             bot.answerCallbackQuery(query.id, text='دیگر کاربر را دنبال نمیکنی')
         return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'blockorunblock'):
+        u_id = int(splited_query[1])
+        if db.user_is_blocked(u_id):
+            db.unblock_user(u_id)
+            bot.answerCallbackQuery(query.id, text='کاربر آنبلاک شد')
+        else:
+            db.block_user(u_id)
+            db.unactivate(u_id)
+            bot.answerCallbackQuery(query.id, text='کاربر بلاک شد')
 
     else:
         return constants.STATE_MAIN

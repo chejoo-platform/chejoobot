@@ -60,7 +60,7 @@ def main_menue_handler(bot, update):
         return constants.STATE_MAIN
     elif (message == '⚙ تنظیمات'):
         topics.select_topics(bot, update.message.chat_id)
-    elif (message == '🎗🎗🎗رنکینگ کاربران🎗🎗🎗'):
+    elif (message == 'لیست کاربران'):
         users.show_top_users(bot, update.message.chat_id)
     elif (message == ''):
         show_how_to_work_with_bot(bot, update.message.chat_id)
@@ -94,10 +94,12 @@ def commanhandler(bot, update):
 
     elif (command_pre == 'v'):
         if command_post.isdigit():
-            answers.show_best_answer_of_user(bot, chat_id, int(command_post))
+            answers.show_answers_of_user(bot, chat_id, int(command_post))
+            # answers.show_best_answer_of_user(bot, chat_id, int(command_post))
         else:
             user_id = db.get_user_by_username(command_post)
-            answers.show_best_answer_of_user(bot, chat_id, user_id)
+            # answers.show_best_answer_of_user(bot, chat_id, user_id)
+            answers.show_answers_of_user(bot, chat_id, user_id)
 
     elif update.message.text == '/sendupdatemessage':
         bot.sendMessage(chat_id=chat_id,text='پیام آپدیت بات رو وارد کن', reply_markup=constants.KEYBOARD_MAIN)

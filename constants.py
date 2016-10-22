@@ -11,7 +11,7 @@ from mytoken import TOKEN, DATABASE_DATABASE
 DATABASE_HOST = 'localhost'
 DATABASE_USER = 'root'
 DATABASE_PASS = ''
-DATABASE_TABLES = ['USERS', 'QUESTIONS', 'ANSWERS', 'TOPICS', 'COMMENTS', 'TEMP', 'ADMINS', 'BLOCKED']
+DATABASE_TABLES = ['USERS', 'QUESTIONS', 'ANSWERS', 'TOPICS', 'COMMENTS', 'TEMP', 'ADMINS', 'BLOCKED', 'RECENT_MESSAGES']
 USER_LEVELES = ['هیچی', '🐜', '🐞']
 LEVEL_STAGES = [10, 20, 30, 50, 80, 130, 210, 340, 560, 910]
 STATE_MAIN = 0
@@ -33,7 +33,7 @@ ANSWER_RANK = ['بهترین جواب','دومین جواب برتر', 'سومی
 KEYBOARD_MAIN = ReplyKeyboardMarkup([
     [KeyboardButton(text='🤔 از چجو بپرس'),KeyboardButton(text='سوالای اخیر')],
     [KeyboardButton(text='⚙ تنظیمات'), KeyboardButton(text='👤 پروفایل')],
-    [KeyboardButton(text='🎗🎗🎗رنکینگ کاربران🎗🎗🎗')]
+    [KeyboardButton(text = 'لیست کاربران')]
 ],
                                     resize_keyboard = True)
 KEYBOARD_ASK = ReplyKeyboardMarkup([

@@ -4,6 +4,8 @@ import db
 import json
 import telegram
 import answers
+import functions
+import DateConvertor
 from telegram import ReplyKeyboardMarkup
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, ConversationHandler
@@ -16,12 +18,15 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
     question = q["question"]
     q_link = '/q'+str(q['msg_id'])
     asker_id = q["user_id"]
+    q_date = str(q['date'].date()).split('-')
+    date = DateConvertor.shamsiDate(int(q_date[0]),int(q_date[1]),int(q_date[2]))
+    date = functions.enToPersianNumb(date)
     asker = db.get_user(asker_id)
     like = len(q['followers'])
     if chat_id in q['followers']:
-        text_like = 'شما + '+str(like-1)+' ♥️'
+        text_like = 'شما و '+functions.enToPersianNumb(like-1)+' نفر ♥️'
     else:
-        text_like = '♥️ '+str(like)
+        text_like =functions.enToPersianNumb(like) + ' نفر♥️ '
     if (asker['username'] == ''):
         asker = '/u'+str(asker_id)
     else:
@@ -46,25 +51,26 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
                                      callback_data='deleteQuestion_'+ str(q_id))
          ]]
     keyboard = InlineKeyboardMarkup(buttons)
-    text_message = constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker
+    text_message = constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker+'\n'+date
     if withans:
         bot.sendMessage(chat_id, text = text_message)
     else:
         if (callback == False):
-            bot.sendMessage(chat_id, text = text_message,
-                            reply_markup = keyboard)
+            msg = bot.sendMessage(chat_id, text = text_message,
+                                  reply_markup = keyboard)
+            db.add_msgid_and_user_to_recent_messages_question(chat_id, q_id, msg['message_id'])
             if db.have_answer(q_id):
                 answers.show_answers(bot, chat_id, q_id,show=True)
         else:
             bot.editMessageReplyMarkup(chat_id = chat_id,
-                                message_id = msg_id ,
-                                reply_markup = keyboard)
+                                       message_id = msg_id ,
+                                       reply_markup = keyboard)
 
     # ForceReply
 
 def insert_question(bot, update):
     msg = update.message
-    if msg.text == 'سوالای اخیر' or msg.text == '🤔 از چجو بپرس' or msg.text == '⚙ تنظیمات' or msg.text == '👤 پروفایل':
+    if msg.text == 'سوالای اخیر' or msg.text == '🤔 از چجو بپرس' or msg.text == '⚙ تنظیمات' or msg.text == '👤 پروفایل ' or msg.text == 'لیست کاربران':
         return constants.STATE_ASK
     question_id = str(msg.message_id)+'-'+str(msg.chat_id)
     db.insert_question_to_temp(msg.message_id, msg.text, msg.chat_id, msg.date)
@@ -152,7 +158,7 @@ def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0
         before_text = 'صفحه قبل'
         before_call = 'beforpage'+'_'+str(i-1)+'_'+topic
 
-    last_questions_text = str(skip+1)+' تا '+str(skip+number)+'  سوال اخیر در موضوع {}:\n'.format(topic)
+    last_questions_text = functions.enToPersianNumb(skip+1)+' تا '+functions.enToPersianNumb(skip+number)+'  سوال اخیر در موضوع {}:\n'.format(topic)
     buttons = [[
         InlineKeyboardButton(text=next_text,
                              callback_data=next_call),
@@ -167,7 +173,7 @@ def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0
         else:
             q_number = len(q['answers'])
         q_index = (i*number)+1+questions.index(q)
-        text = '\n'+str(q_index)+' 🤔سوال: '+ q['question']+'؟\nلینک: /q'+str(q['msg_id'])+'\n♥️تعداد دنبال کنندگان : '+ str(len(q['followers'])) +'\n📝تعداد جواب ها: '+ str(q_number)+'\n.'
+        text = '\n'+functions.enToPersianNumb(q_index)+' 🤔سوال: '+ q['question']+'؟\nلینک: /q'+str(q['msg_id'])+'\n♥️تعداد دنبال کنندگان : '+ functions.enToPersianNumb(len(q['followers'])) +'\n📝تعداد جواب ها: '+ functions.enToPersianNumb(q_number)+'\n.'
         last_questions_text += text
 
     if callback:
@@ -179,18 +185,18 @@ def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0
 def show(bot, update):
     message = update.message.text
     if (message == 'همه'):
-        bot.sendMessage(update.message.chat_id, text='سوال های اخیر در همه موضوعها:\n.', reply_markup = constants.KEYBOARD_MAIN)
+        # bot.sendMessage(update.message.chat_id, text='سوال های اخیر در همه موضوعها:\n.', reply_markup = constants.KEYBOARD_MAIN)
         bot.sendChatAction(update.message.chat_id, action = 'typing')
         show_last_questions(bot,update.message.chat_id)
         db.activate(update.message.chat_id)
-        return constants.STATE_MAIN
+        return constants.STATE_READ
 
     elif (message == 'پلتفرم' or message == 'استارتاپ' or message == 'متفرقه' or message == 'چجو'):
-        bot.sendMessage(update.message.chat_id, text='سوال هایی که در موضوع {} مطرح شده:'.format(message), reply_markup = constants.KEYBOARD_MAIN)
+        # bot.sendMessage(update.message.chat_id, text='سوال هایی که در موضوع {} مطرح شده:'.format(message), reply_markup = constants.KEYBOARD_MAIN)
         bot.sendChatAction(update.message.chat_id, action = 'typing')
         show_last_questions(bot,update.message.chat_id, topic = message)
         db.activate(update.message.chat_id)
-        return constants.STATE_MAIN
+        return constants.STATE_READ
 
     elif (message == '⬅️'):
         bot.sendMessage(update.message.chat_id, text='برگشتی به منوی اصلی 😃', reply_markup = constants.KEYBOARD_MAIN)
@@ -214,8 +220,8 @@ def show_questions_asked_by_user(bot, chat_id, u_id, i=0, limit=5, callback = Fa
     else:
         before_text = 'صفحه قبل'
         before_call = 'beforepageuserquestions'+'_'+str(i-1)+'_'+str(u_id)
-
-    last_questions_text = str(skip+1)+' تا '+str(skip+limit)+'  سوال اخیر:\n'
+    user_name = db.get_user(u_id)['first_name']
+    last_questions_text = functions.enToPersianNumb(skip+1)+' تا '+functions.enToPersianNumb(skip+limit)+'  سوال اخیر {}:\n'.format(user_name)
     buttons = [[
         InlineKeyboardButton(text=next_text,
                              callback_data=next_call),
@@ -229,7 +235,7 @@ def show_questions_asked_by_user(bot, chat_id, u_id, i=0, limit=5, callback = Fa
         else:
             q_number = len(q['answers'])
         number = (i*limit)+1+questions.index(q)
-        text = '\n'+ str(number)+' 🤔سوال: '+ q['question']+'؟\nلینک: /q'+str(q['msg_id'])+'\n♥️تعداد دنبال کنندگان : '+ str(len(q['followers'])) +'\n📝تعداد جواب ها: '+ str(q_number)+'\n.'
+        text = '\n'+ functions.enToPersianNumb(number)+' 🤔سوال: '+ q['question']+'؟\nلینک: /q'+str(q['msg_id'])+'\n♥️تعداد دنبال کنندگان : '+ functions.enToPersianNumb(len(q['followers'])) +'\n📝تعداد جواب ها: '+ functions.enToPersianNumb(q_number)+'\n.'
         last_questions_text += text
 
     if callback:

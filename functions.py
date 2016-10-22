@@ -10,6 +10,7 @@ import questions
 import users
 import comments
 import topics
+import re
 
 def call_handler(bot, update):
     query = update.callback_query
@@ -17,8 +18,11 @@ def call_handler(bot, update):
 
     # print(query.id)
     if db.user_is_blocked(query.from_user.id):
-        bot.answerCallbackQuery(query.id, text='متاسفم شما بلاک شده اید و نمیتوانید از این بات استفاده کنید 😶', show_alert=True)
-        return constants.STATE_MAIN
+        if db.user_is_admin(query.from_user.id):
+            pass
+        else:
+            bot.answerCallbackQuery(query.id, text='متاسفم شما بلاک شده اید و نمیتوانید از این بات استفاده کنید 😶', show_alert=True)
+            return constants.STATE_MAIN
 
     if (splited_query[0] == 'answer'):
         if (db.get_question(splited_query[1]) == None ):
@@ -62,6 +66,20 @@ def call_handler(bot, update):
                                 withans = False,
                                 callback = True,
                                 msg_id = query.message.message_id)
+
+        for m in db.get_msgid_and_user_of_question(q_id):
+            user_id = m['u_id']
+            msg_id = m['msg_id']
+            try:
+                questions.show_question(q_id,
+                                        user_id,
+                                        bot,
+                                        withans = False,
+                                        callback = True,
+                                        msg_id = msg_id)
+            except:
+                pass
+
         if fo_or_unfo:
             bot.answerCallbackQuery(query.id, text='سوال را دنبال کردی')
         else:
@@ -117,11 +135,22 @@ def call_handler(bot, update):
         ann_id = splited_query[2]
         upvot = db.upvote_answer(ann_id,
                                  query.from_user.id)
-        answers.show_answer(bot,
-                            query.from_user.id,
-                            splited_query[1],
-                            ann_id,
-                            msg_id = query.message.message_id)
+        # answers.show_answer(bot,
+        #                     query.from_user.id,
+        #                     splited_query[1],
+        #                     ann_id,
+        #                     msg_id = query.message.message_id)
+
+        for message in db.get_msgid_and_user_of_answer(ann_id):
+            try:
+                answers.show_answer(bot,
+                                    message['u_id'],
+                                    splited_query[1],
+                                    ann_id,
+                                    msg_id = message['msg_id'])
+            except:
+                pass
+
         bot.answerCallbackQuery(query.id, text='درخواست شما انجام شد')
         return constants.STATE_MAIN
 
@@ -129,11 +158,20 @@ def call_handler(bot, update):
         ann_id = splited_query[2]
         upvot = db.downvote_answer(ann_id,
                                  query.from_user.id)
-        answers.show_answer(bot,
-                             query.from_user.id,
-                             splited_query[1],
-                             ann_id,
-                             msg_id = query.message.message_id)
+        # answers.show_answer(bot,
+        #                      query.from_user.id,
+        #                      splited_query[1],
+        #                      ann_id,
+        #                      msg_id = query.message.message_id)
+        for message in db.get_msgid_and_user_of_answer(ann_id):
+            try:
+                answers.show_answer(bot,
+                                    message['u_id'],
+                                    splited_query[1],
+                                    ann_id,
+                                    msg_id = message['msg_id'])
+            except:
+                pass
         bot.answerCallbackQuery(query.id, text='درخواست شما انجام شد')
         return constants.STATE_MAIN
 
@@ -264,5 +302,80 @@ def call_handler(bot, update):
             db.unactivate(u_id)
             bot.answerCallbackQuery(query.id, text='کاربر بلاک شد')
 
+    elif (splited_query[0] == 'upinuseranswers'):
+        ann_id = splited_query[1]
+        user_id = int(splited_query[2])
+        number = int(splited_query[3])
+        upvot = db.upvote_answer(ann_id,
+                                 query.from_user.id)
+        answers.show_answers_of_user(bot,
+                                     query.from_user.id,
+                                     user_id,
+                                     i = number,
+                                     show = False,
+                                     msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='درخواست شما انجام شد')
+        return constants.STATE_MAIN
+
+
+    elif (splited_query[0] == 'downinuseranswers'):
+        ann_id = splited_query[1]
+        user_id = int(splited_query[2])
+        number = int(splited_query[3])
+        upvot = db.downvote_answer(ann_id,
+                                   query.from_user.id)
+        answers.show_answers_of_user(bot,
+                                     query.from_user.id,
+                                     user_id,
+                                     i = number,
+                                     show = False,
+                                     msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='درخواست شما انجام شد')
+        return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'nextanswerofuser'):
+        user_id = int(splited_query[1])
+        number = int(splited_query[2])
+        answers.show_answers_of_user(bot,
+                                     query.from_user.id,
+                                     user_id,
+                                     i = number,
+                                     show = False,
+                                     msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='جواب بعدی نمایش داده شد')
+        return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'beforanswerofuser'):
+        user_id = int(splited_query[1])
+        number = int(splited_query[2])
+        answers.show_answers_of_user(bot,
+                                     query.from_user.id,
+                                     user_id,
+                                     i = number,
+                                     show = False,
+                                     msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='جواب قبل نمایش داده شد')
+        return constants.STATE_MAIN
+
     else:
         return constants.STATE_MAIN
+
+def enToPersianNumb(number):
+    dic = {
+        '0':'۰',
+        '1':'۱',
+        '2':'۲',
+        '3':'۳',
+        '4':'۴',
+        '5':'۵',
+        '6':'۶',
+        '7':'۷',
+        '8':'۸',
+        '9':'۹',
+        '.':'.',
+    }
+    return multiple_replace(dic, number)
+
+def multiple_replace(dic, text):
+    pattern = "|".join(map(re.escape, dic.keys()))
+    return re.sub(pattern, lambda m: dic[m.group()], str(text))

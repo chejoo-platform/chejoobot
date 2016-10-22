@@ -228,9 +228,15 @@ def delete_question(q_id):
     user = r.table('USERS').get(user_id)
     q_numbers = user.run(conn)['q_numbers']-1
     user.update({'q_numbers': q_numbers }).run(conn)
+    delete_answers_of_question(q_id)
     # conn.close()
 
 def delete_answers_of_question(q_id):
+    answers = r.table('ANSWERS').filter({'q_id': q_id}).run(conn)
+    for a in answers:
+        user_id = a['u_id']
+        a_numbers = r.table('USERS').get(user_id).run(conn)['a_numbers']
+        r.table('USERS').get(user_id).update({'a_numbers': a_numbers-1}).run(conn)
     r.table('ANSWERS').filter({'q_id': q_id}).delete().run(conn)
 
 def get_last_questions(n, s, topic):
@@ -426,6 +432,12 @@ def get_best_answer_of_this_user(u_id):
         return False
     return answer[0]
 
+def get_answer_of_user(u_id, skip):
+    answer = list(r.table('ANSWERS').filter({'u_id': u_id}).order_by(r.desc('date')).skip(skip).limit(1).run(conn))
+    if len(answer) == 0:
+        return False
+    return answer[0]
+
 def get_comments(an_id):
     # conn = connect()
     c = r.table('COMMENTS').filter({'an_id': an_id}).order_by(r.desc('date')).limit(7).run(conn)
@@ -485,18 +497,42 @@ def topic_follower_number(topic):
     f_number =r.table('TOPICS').get(topic).run(conn)['f_number']
     return f_number
 
+def add_msgid_and_user_to_recent_messages_question(u_id, q_id, msg_id):
+    id = str(u_id)+'_'+q_id
+    if r.table('RECENT_MESSAGES').get(id).run(conn) == None:
+        r.table('RECENT_MESSAGES').insert({'id': id, 'u_id': u_id, 'q_id': q_id, 'msg_id': msg_id}).run(conn)
+    else:
+        r.table('RECENT_MESSAGES').get(id).update({'msg_id': msg_id}).run(conn)
+
+def get_msgid_and_user_of_question(q_id):
+    return r.table('RECENT_MESSAGES').filter({'q_id': q_id}).run(conn)
+
+def add_msgid_and_user_to_recent_messages_answer(u_id, ann_id, msg_id):
+    id = str(u_id)+'_'+ann_id
+    if r.table('RECENT_MESSAGES').get(id).run(conn) == None:
+        r.table('RECENT_MESSAGES').insert({'id': id, 'u_id': u_id, 'an_id': ann_id, 'msg_id': msg_id}).run(conn)
+    else:
+        r.table('RECENT_MESSAGES').get(id).update({'msg_id': msg_id}).run(conn)
+
+def get_msgid_and_user_of_answer(an_id):
+    return r.table('RECENT_MESSAGES').filter({'an_id': an_id}).run(conn)
+
 def update_users():
     acitvate_all_users()
     for user in get_users():
         score = 0
+        q_numbers = 0
+        a_numbers = 0
         for q in r.table('QUESTIONS').filter({'user_id': user['id']}).run(conn):
             score += len(q['followers'])
+            q_numbers +=1
         for a in r.table('ANSWERS').filter({'u_id': user['id']}).run(conn):
             score += a['upvotes']
+            a_numbers +=1
         for u in user['followers']:
             f_level = r.table('USERS').get(u).run(conn)['level']
             score += 2 * f_level
-        r.table('USERS').get(user['id']).update({'score': score}).run(conn)
+        r.table('USERS').get(user['id']).update({'score': score, 'a_numbers': a_numbers, 'q_numbers': q_numbers}).run(conn)
 
 def delete_answers_without_questions():
     for a in r.table("ANSWERS").run(conn):
@@ -552,5 +588,6 @@ def update_levels():
 if __name__ == '__main__' :
     create_database()
     r.table('TEMP').delete().run(conn)
+    update_users()
     delete_answers_without_questions()
     # update_users()

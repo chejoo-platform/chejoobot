@@ -4,6 +4,7 @@ import db
 import json
 import telegram
 import answers
+import functions
 from telegram import ReplyKeyboardMarkup
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, ConversationHandler
@@ -25,10 +26,10 @@ def insert_topic(bot, update):
 def select_topics(bot, chat_id, callback = False, m_id = 0):
     text = 'موضوع هایی که میخوای توی اونا واست سوال ارسال بشه رو انتخاب کن'
     topics = db.get_user_topics(chat_id)
-    p_number = str(db.topic_follower_number('پلتفرم'))
-    s_number = str(db.topic_follower_number('استارتاپ'))
-    c_number = str(db.topic_follower_number('چجو'))
-    o_number = str(db.topic_follower_number('متفرقه'))
+    p_number = functions.enToPersianNumb(db.topic_follower_number('پلتفرم'))
+    s_number = functions.enToPersianNumb(db.topic_follower_number('استارتاپ'))
+    c_number = functions.enToPersianNumb(db.topic_follower_number('چجو'))
+    o_number = functions.enToPersianNumb(db.topic_follower_number('متفرقه'))
     if 'پلتفرم' in topics:
         platform_text = '🌕 پلتفرم'
     else:

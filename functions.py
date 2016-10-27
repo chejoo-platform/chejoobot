@@ -11,6 +11,8 @@ import users
 import comments
 import topics
 import re
+import sessions
+import setting
 
 def call_handler(bot, update):
     query = update.callback_query
@@ -81,7 +83,7 @@ def call_handler(bot, update):
                 pass
 
         if fo_or_unfo:
-            bot.answerCallbackQuery(query.id, text='سوال را دنبال کردی')
+            bot.answerCallbackQuery(query.id, text='هر وقت کسی این سوالو جواب داد بهت خبر میدم')
         else:
             bot.answerCallbackQuery(query.id, text='دیگر سوال را دنبال نمیکنی')
         return constants.STATE_MAIN
@@ -114,12 +116,15 @@ def call_handler(bot, update):
                              i = int(splited_query[3]),
                              msg_id = query.message.message_id,
                              up_or_down = True)
-        bot.answerCallbackQuery(query.id, text='درخواست شما انجام شد')
+        if upvot:
+            bot.answerCallbackQuery(query.id, text='هر کس کامنت بذاره بهت خبر میدم')
+        else :
+            bot.answerCallbackQuery(query.id, text='لایکتو برداشتی کامنتی برات نمیفرستم')
         return constants.STATE_MAIN
 
     elif (splited_query[0] == 'downvote'):
         ann_id = splited_query[2]
-        upvot = db.downvote_answer(ann_id,
+        downvote = db.downvote_answer(ann_id,
                                  query.from_user.id)
         answers.show_answers(bot,
                              query.from_user.id,
@@ -127,7 +132,10 @@ def call_handler(bot, update):
                              i = int(splited_query[3]),
                              msg_id = query.message.message_id,
                              up_or_down = True)
-        bot.answerCallbackQuery(query.id, text='درخواست شما انجام شد')
+        if downvote:
+            bot.answerCallbackQuery(query.id, text='جواب و دیسلایک کردی')
+        else:
+            bot.answerCallbackQuery(query.id, text='دیسلایکتو برداشتی اگه دوست داشتی لایک کن')
         return constants.STATE_MAIN
 
 #upvote and downvote answers in reply
@@ -296,6 +304,7 @@ def call_handler(bot, update):
         u_id = int(splited_query[1])
         if db.user_is_blocked(u_id):
             db.unblock_user(u_id)
+            db.activate(u_id)
             bot.answerCallbackQuery(query.id, text='کاربر آنبلاک شد')
         else:
             db.block_user(u_id)
@@ -356,6 +365,33 @@ def call_handler(bot, update):
                                      msg_id = query.message.message_id)
         bot.answerCallbackQuery(query.id, text='جواب قبل نمایش داده شد')
         return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'createsession'):
+        user_id = int(splited_query[1])
+        db.create_session(user_id)
+        bot.sendMessage(query.from_user.id, text =' برای این کاربر یک جلسه ایجاد شد')
+        return constants.STATE_MAIN
+
+    elif (splited_query[0] == 'nextsession'):
+        user_id = int(splited_query[2])
+        sessions.show_comming_sessions(bot, query.from_user.id, i= int(splited_query[1]), edit = True, msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='صندلی داغ')
+
+    elif (splited_query[0] == 'showusernameon'):
+        if db.get_user(query.from_user.id)['show_username']:
+            bot.answerCallbackQuery(query.id, text='یوزرنیم تلگرام شما نمایش داده می شود')
+            return constants.STATE_SETTING
+        db.turn_show_username_on(query.from_user.id)
+        setting.telegram_profile_show_setting(bot, query.from_user.id, call_back = True, msg_id = query.message.message_id)
+        bot.answerCallbackQuery(query.id, text='یوزرنیم تلگرام شما نمایش داده می شود')
+
+    elif (splited_query[0] == 'showusernameoff'):
+        if db.get_user(query.from_user.id)['show_username']:
+            db.turn_show_username_off(query.from_user.id)
+            setting.telegram_profile_show_setting(bot, query.from_user.id, call_back = True, msg_id = query.message.message_id)
+            bot.answerCallbackQuery(query.id, text='یوزرنیم تلگرام شما نمایش داده نمی شود')
+            return constants.STATE_SETTING
+        bot.answerCallbackQuery(query.id, text='یوزرنیم تلگرام شما نمایش داده نمی شود')
 
     else:
         return constants.STATE_MAIN

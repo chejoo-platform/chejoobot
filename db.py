@@ -33,13 +33,19 @@ def insert_new_user(telid, first_name, last_name, username):
                 "username": username, "active": True,
                 "score": 0, "followers": [], "level" : 1,
                 'a_numbers': 0, 'q_numbers': 0,
-                'topics': list()}
+                'topics': list(), 'show_username': True}
     r.table("USERS").insert(new_user).run(conn)
     # follow_or_unfollow_topic(telid, 'پلتفرم')
     follow_or_unfollow_topic(telid, 'استارتاپ')
     # follow_or_unfollow_topic(telid, 'چجو')
     # follow_or_unfollow_topic(telid, 'متفرقه')
     # conn.close()
+
+def turn_show_username_on(u_id):
+    r.table('USERS').get(u_id).update({'show_username': True}).run(conn)
+
+def turn_show_username_off(u_id):
+    r.table('USERS').get(u_id).update({'show_username': False}).run(conn)
 
 def deactivate_all_users():
     # conn = connect()
@@ -367,7 +373,7 @@ def upvote_answer(an_id, user_id):
                                           'up_and_down': up_and_down}).run(conn)
     update_level_of_user(writer_id)
     # conn.close()
-    return upvotes
+    return user_id in upvoters
 
 def downvote_answer(an_id, user_id):
     # conn = connect()
@@ -400,7 +406,7 @@ def downvote_answer(an_id, user_id):
                                           'up_and_down': up_and_down}).run(conn)
     update_level_of_user(writer_id)
     # conn.close()
-    return upvotes
+    return user_id in downvoters
 
 def delete_table(table):
     # conn = connect()
@@ -517,6 +523,15 @@ def add_msgid_and_user_to_recent_messages_answer(u_id, ann_id, msg_id):
 def get_msgid_and_user_of_answer(an_id):
     return r.table('RECENT_MESSAGES').filter({'an_id': an_id}).run(conn)
 
+def create_session(u_id):
+    r.table('SESSIONS').insert({'u_id': u_id, 'questions': list()}).run(conn)
+
+def get_comming_sessions(i):
+    x = list(r.table('SESSIONS').run(conn))
+    if len(x) == 0:
+        return False
+    return x[i], len(x)
+
 def update_users():
     acitvate_all_users()
     for user in get_users():
@@ -533,6 +548,10 @@ def update_users():
             f_level = r.table('USERS').get(u).run(conn)['level']
             score += 2 * f_level
         r.table('USERS').get(user['id']).update({'score': score, 'a_numbers': a_numbers, 'q_numbers': q_numbers}).run(conn)
+
+def insert_usernameshow_true_for_all():
+    for user in get_users():
+        r.table('USERS').get(user['id']).update({'show_username': True}).run(conn)
 
 def delete_answers_without_questions():
     for a in r.table("ANSWERS").run(conn):
@@ -590,4 +609,4 @@ if __name__ == '__main__' :
     r.table('TEMP').delete().run(conn)
     update_users()
     delete_answers_without_questions()
-    # update_users()
+    insert_usernameshow_true_for_all()

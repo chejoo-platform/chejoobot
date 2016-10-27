@@ -24,7 +24,7 @@ def insert_topic(bot, update):
     return constants.STATE_TOPIC
 
 def select_topics(bot, chat_id, callback = False, m_id = 0):
-    text = 'موضوع هایی که میخوای توی اونا واست سوال ارسال بشه رو انتخاب کن'
+    text = 'موضوع هایی که میخواهی در آن ها برایت سوال ارسال شود را انتخاب کن\n(هرکدام را خاموش کنی در آن موضوع برایت نوتیف نخواهد آمد !)'
     topics = db.get_user_topics(chat_id)
     p_number = functions.enToPersianNumb(db.topic_follower_number('پلتفرم'))
     s_number = functions.enToPersianNumb(db.topic_follower_number('استارتاپ'))

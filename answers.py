@@ -30,7 +30,7 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
         if u_id in ans['downvoters']:
             text_downvote = '👎🏻'
     writer = db.get_user(writer_id)
-    if (writer['username'] == ''):
+    if (writer['username'] == '') or not writer['show_username']:
         writer = '/u'+str(writer_id)
     else:
         writer = '/u'+writer['username']
@@ -92,7 +92,7 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
         if u_id in ans['downvoters']:
             text_downvote = '👎🏻'
     writer = db.get_user(writer_id)
-    if (writer['username'] == ''):
+    if (writer['username'] == '') or not writer['show_username']:
         writer = '/u'+str(writer_id)
     else:
         writer = '/u'+writer['username']
@@ -141,7 +141,7 @@ def show_answers_of_user(mybot, u_id, user_id, i = 0, show = True, msg_id = 0):
         if u_id in ans['downvoters']:
             text_downvote = '👎🏻'
     writer = db.get_user(writer_id)
-    if (writer['username'] == ''):
+    if (writer['username'] == '') or not writer['show_username']:
         writer_link = '/u'+str(writer_id)
     else:
         writer_link = '/u'+writer['username']

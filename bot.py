@@ -15,6 +15,8 @@ import functions
 import users
 import comments
 import topics
+import sessions
+import setting
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -55,15 +57,17 @@ def main_menue_handler(bot, update):
                         text = ' سوال خود را وارد کن اگر منصرف شدی /skip رو بزن\n.', reply_markup=constants.KEYBOARD_ASK)
         db.unactivate(update.message.chat_id)
         return constants.STATE_ASK
-    elif (message == '👤 پروفایل'):
+    elif (message == '👤 پروفایل من'):
         users.show_user(bot, update.message.chat_id, update.message.chat_id)
         return constants.STATE_MAIN
     elif (message == '⚙ تنظیمات'):
-        topics.select_topics(bot, update.message.chat_id)
+        bot.sendMessage(update.message.chat_id, text = 'در این قسمت میتوانید تنظیمات لازم بات خود را انجام دهید\n از منوی زیر یکی از تنظیمات را انتخاب کنید', reply_markup=constants.KEYBOARD_SETTING)
+        return constants.STATE_SETTING
+        # topics.select_topics(bot, update.message.chat_id)
     elif (message == 'لیست کاربران'):
         users.show_top_users(bot, update.message.chat_id)
-    elif (message == ''):
-        show_how_to_work_with_bot(bot, update.message.chat_id)
+    elif (message == 'صندلی داغ'):
+        sessions.show_comming_sessions(bot, update.message.chat_id)
     else:
         bot.sendMessage(update.message.chat_id, text = 'لطفا از منوی زیر انتخاب کنید', reply_markup=constants.KEYBOARD_MAIN)
 
@@ -117,7 +121,6 @@ def commanhandler(bot, update):
 def wrong_call_handler(bot, update):
     query = update.callback_query
     bot.answerCallbackQuery(query.id,text= 'این دکمه ها کار نمیکنن تا زمانی که برگردی به منوی اصلی')
-    # bot.sendMessage(chat_id=query.from_user.id, text='شما در موقعیتی نیستید که بتوانید ازین دکمه ها استفاده کنید 😝لطفا /skip را بزنید تا ببینید چه کارهایی میتوانید انجام دهید😌', reply_markup = constants.KEYBOARD_ANSWER_CANCEL)
 
 def skip(bot, update):
     bot.sendMessage(chat_id=update.message.chat_id, text='برگشتید به منوی اصلی', reply_markup = constants.KEYBOARD_MAIN)
@@ -192,32 +195,40 @@ def main():
                                       CallbackQueryHandler(wrong_call_handler)],
 
             constants.STATE_TOPIC: [MessageHandler([Filters.text], topics.insert_topic),
-                                          CommandHandler('skip', questions.skip_question),
-                                          CommandHandler('done', questions.finish_question),
-                                          CallbackQueryHandler(wrong_call_handler)],
+                                    CommandHandler('skip', questions.skip_question),
+                                    CommandHandler('done', questions.finish_question),
+                                    CallbackQueryHandler(wrong_call_handler)],
 
             constants.STATE_READ: [MessageHandler([Filters.text], questions.show),
+                                   MessageHandler([Filters.command], commanhandler),
+                                   CallbackQueryHandler(functions.call_handler),
                                    CommandHandler('skip', skip),
                                    CallbackQueryHandler(wrong_call_handler)],
 
-            constants.STATE_UPDATE: [MessageHandler([Filters.text], update_message)]
+            constants.STATE_UPDATE: [MessageHandler([Filters.text], update_message)],
+
+            # constants.STATE_SESSION: [MessageHandler([Filters.text], sessions.),
+            #                           CommandHandler('skip', skip),
+            #                           CallbackQueryHandler(wrong_call_handler)],
+
+            constants.STATE_SETTING: [MessageHandler([Filters.text], setting.setting_handler),
+                                      MessageHandler([Filters.command], commanhandler),
+                                      CallbackQueryHandler(functions.call_handler),
+                                      CommandHandler('skip', skip)],
+
         },
         fallbacks=[CommandHandler('stop', stop_this_fucking_bot)])
 
     dp = updater.dispatcher
 
-    # on different commands - answer in Telegrm
     # add conversation handler
     dp.add_handler(main_conversationhandler)
-    # on noncommand i.e message - echo the message on Telegram
     # log all errors
     dp.add_error_handler(error_callback)
 
     # Start the Bot
     updater.start_polling()
 
-    # Run the bot until the you presses Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
     updater.idle()
 

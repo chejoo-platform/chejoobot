@@ -22,12 +22,13 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
     date = DateConvertor.shamsiDate(int(q_date[0]),int(q_date[1]),int(q_date[2]))
     date = functions.enToPersianNumb(date)
     asker = db.get_user(asker_id)
+    topic = q['topics'][0]
     like = len(q['followers'])
     if chat_id in q['followers']:
         text_like = 'شما و '+functions.enToPersianNumb(like-1)+' نفر ♥️'
     else:
         text_like =functions.enToPersianNumb(like) + ' نفر♥️ '
-    if (asker['username'] == ''):
+    if (asker['username'] == '') or not asker['show_username']:
         asker = '/u'+str(asker_id)
     else:
         asker = '/u'+asker['username']
@@ -51,7 +52,7 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
                                      callback_data='deleteQuestion_'+ str(q_id))
          ]]
     keyboard = InlineKeyboardMarkup(buttons)
-    text_message = constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker+'\n'+date
+    text_message = 'سوال در موضوع {} '.format(topic)+constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker+'\n'+date
     if withans:
         bot.sendMessage(chat_id, text = text_message)
     else:
@@ -185,18 +186,18 @@ def show_last_questions(bot, chat_id, i=0 , number=5, callback = False, m_id = 0
 def show(bot, update):
     message = update.message.text
     if (message == 'همه'):
-        # bot.sendMessage(update.message.chat_id, text='سوال های اخیر در همه موضوعها:\n.', reply_markup = constants.KEYBOARD_MAIN)
+        bot.sendMessage(update.message.chat_id, text='سوال های اخیر در همه موضوعها:\n.', reply_markup = constants.KEYBOARD_MAIN)
         bot.sendChatAction(update.message.chat_id, action = 'typing')
         show_last_questions(bot,update.message.chat_id)
         db.activate(update.message.chat_id)
-        return constants.STATE_READ
+        return constants.STATE_MAIN
 
     elif (message == 'پلتفرم' or message == 'استارتاپ' or message == 'متفرقه' or message == 'چجو'):
-        # bot.sendMessage(update.message.chat_id, text='سوال هایی که در موضوع {} مطرح شده:'.format(message), reply_markup = constants.KEYBOARD_MAIN)
+        bot.sendMessage(update.message.chat_id, text='سوال هایی که در موضوع {} مطرح شده:'.format(message), reply_markup = constants.KEYBOARD_MAIN)
         bot.sendChatAction(update.message.chat_id, action = 'typing')
         show_last_questions(bot,update.message.chat_id, topic = message)
         db.activate(update.message.chat_id)
-        return constants.STATE_READ
+        return constants.STATE_MAIN
 
     elif (message == '⬅️'):
         bot.sendMessage(update.message.chat_id, text='برگشتی به منوی اصلی 😃', reply_markup = constants.KEYBOARD_MAIN)

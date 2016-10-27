@@ -7,14 +7,14 @@ from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMa
 
 def show_user(bot, chat_id, u_id, callback = False, msg_id = 0):
     user = db.get_user(u_id)
-    if (user['username'] == ''):
+    if (user['username'] == '') or not user['show_username']:
         username = user['first_name']+ ' '+user['last_name']
     else:
         username = '@'+user['username']
     q_numbers = functions.enToPersianNumb(str(user['q_numbers']))
     a_numbers = functions.enToPersianNumb(str(user['a_numbers']))
     followers_number = len(user['followers'])
-    if (user['username'] == ''):
+    if (user['username'] == '') or not user['show_username']:
         user_questions_link = '/w'+str(u_id)
         user_best_answer_link = '/v'+str(u_id)
     else:
@@ -27,14 +27,18 @@ def show_user(bot, chat_id, u_id, callback = False, msg_id = 0):
         text_like = functions.enToPersianNumb(followers_number)+ ' نفر ♥️ '
     if db.user_is_admin(chat_id):
         block_text = 'بلاک یا آنبلاک'
+        session_text ='ایجاد جلسه'
     else:
         block_text = ''
-    buttons = [[
-        InlineKeyboardButton(text=text_like,
+        session_text =''
+    buttons = [
+        [InlineKeyboardButton(text=text_like,
                              callback_data='followUser_'+str(u_id))],
         [InlineKeyboardButton(text=block_text,
-                             callback_data='blockorunblock_'+str(u_id))
-    ]]
+                              callback_data='blockorunblock_'+str(u_id))],
+        [InlineKeyboardButton(text=session_text,
+                             callback_data='createsession_'+str(u_id))]
+    ]
     keyboard = InlineKeyboardMarkup(buttons)
     if callback:
         bot.editMessageText(chat_id = chat_id, text = user_info, message_id = msg_id, reply_markup = keyboard )
@@ -45,14 +49,14 @@ def show_top_users(bot, chat_id, i = 0, callback = False, msg_id = 0):
     count = db.get_user_numbers()
     user = db.get_ranked_user(i)
     u_id = user['id']
-    if (user['username'] == ''):
+    if (user['username'] == '') or not user['show_username']:
         username = user['first_name']+ ' '+user['last_name']
     else:
         username = '@'+user['username']
     q_numbers = functions.enToPersianNumb(user['q_numbers'])
     a_numbers = functions.enToPersianNumb(user['a_numbers'])
     followers_number = len(user['followers'])
-    if (user['username'] == ''):
+    if (user['username'] == '') or not user['show_username']:
         user_questions_link = '/w'+str(u_id)
         user_best_answer_link = '/v'+str(u_id)
     else:

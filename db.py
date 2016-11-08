@@ -7,25 +7,17 @@ import pytz
 import json
 
 
-def connect():
-    conn = r.connect(host=constants.DATABASE_HOST,db=constants.DATABASE_DATABASE)
-    return conn
-conn = connect()
+conn = r.connect(host=constants.DATABASE_HOST,
+                 port=constants.DATABASE_PORT,
+                 db=constants.DATABASE_DATABASE)
+
 def create_database():
-    c = r.connect('localhost')
-    if constants.DATABASE_DATABASE in r.db_list().run(c):
-        pass
-    else:
-        r.db_create(constants.DATABASE_DATABASE).run(c)
-    c.close()
-    # conn = connect()
+    if constants.DATABASE_DATABASE not in r.db_list().run(conn):
+        r.db_create(constants.DATABASE_DATABASE).run(conn)
     for table in constants.DATABASE_TABLES:
-        if table in r.table_list().run(conn):
-            pass
-        else:
+        if table not in r.table_list().run(conn):
             r.table_create(table).run(conn)
     # acitvate_all_users()
-    # conn.close()
 
 def insert_new_user(telid, first_name, last_name, username):
     # conn = connect()

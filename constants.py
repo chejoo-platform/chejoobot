@@ -6,10 +6,14 @@
 """
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from mytoken import TOKEN, DATABASE_DATABASE
-DATABASE_HOST = 'localhost'
-DATABASE_USER = 'root'
-DATABASE_PASS = ''
+import os
+
+TOKEN = os.getenv('BOT_TOKEN')
+
+DATABASE_HOST = os.getenv('DOKKU_RETHINKDB_CHEJOOBOT_PORT_28015_TCP_ADDR')
+DATABASE_PORT = os.getenv('DOKKU_RETHINKDB_CHEJOOBOT_PORT_28015_TCP_PORT')
+DATABASE_DATABASE = 'chejoobot'
+
 DATABASE_TABLES = ['USERS', 'QUESTIONS', 'ANSWERS', 'TOPICS', 'COMMENTS', 'TEMP', 'ADMINS', 'BLOCKED', 'RECENT_MESSAGES', 'SESSIONS']
 USER_LEVELES = ['هیچی', '🐜', '🐞']
 LEVEL_STAGES = [10, 20, 30, 50, 80, 130, 210, 340, 560, 910]

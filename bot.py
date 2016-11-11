@@ -162,7 +162,6 @@ def send_bot_update_message_to_all_users(bot):
 def main():
     #db.create_database()
     # Create the EventHandler and pass it your bot's token.
-    db.connect()
     updater = Updater(constants.TOKEN)
     # Get the dispatcher to register handlers
 

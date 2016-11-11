@@ -160,11 +160,8 @@ def send_bot_update_message_to_all_users(bot):
             db.unactivate(u['id'])
 
 def main():
-    #db.create_database()
-    # Create the EventHandler and pass it your bot's token.
+    db.create_database()
     updater = Updater(constants.TOKEN)
-    # Get the dispatcher to register handlers
-
     main_conversationhandler = ConversationHandler(
         entry_points=[CommandHandler('start', start),
                       MessageHandler([Filters.command], commanhandler),

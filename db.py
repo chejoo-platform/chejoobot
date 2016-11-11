@@ -17,7 +17,6 @@ def create_database():
     for table in constants.DATABASE_TABLES:
         if table not in r.table_list().run(conn):
             r.table_create(table).run(conn)
-    # acitvate_all_users()
 
 def insert_new_user(telid, first_name, last_name, username):
     # conn = connect()

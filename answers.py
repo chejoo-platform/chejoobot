@@ -13,8 +13,7 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
     ans = answers[i]
     # ans_rank = constants.ANSWER_RANK[i]
     an_id = ans['id']
-    an_date = str(ans['date'].date())
-    date = JalaliDate.strptime(an_date, '%Y-%m-%d')
+    date = JalaliDate(ans['date'])
     datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     comments = ans['comments']
     comments_number = len(comments)
@@ -75,8 +74,7 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
     q_text = question['question']
     q_link = '/q'+ str(question['msg_id'])
     ans = db.get_answer(an_id)
-    an_date = str(ans['date'].date())
-    date = JalaliDate.strptime(an_date, '%Y-%m-%d')
+    date = JalaliDate(ans['date'])
     datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     comments = ans['comments']
     comments_number = len(comments)
@@ -124,8 +122,7 @@ def show_answers_of_user(mybot, u_id, user_id, i = 0, show = True, msg_id = 0):
     q_text = question['question']
     q_link = '/q'+ str(question['msg_id'])
     # ans = db.get_answer(an_id)
-    an_date = str(ans['date'].date())
-    date = JalaliDate.strptime(an_date, '%Y-%m-%d')
+    date = JalaliDate(ans['date'])
     datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     comments = ans['comments']
     comments_number = len(comments)

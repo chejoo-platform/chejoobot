@@ -7,7 +7,7 @@ import answers
 import functions
 from khayyam import JalaliDate
 from telegram import ReplyKeyboardMarkup
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import CallbackQueryHandler, ConversationHandler
 from random import randint
 
@@ -21,13 +21,12 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
     date = JalaliDate(q['date'])
     datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     asker = db.get_user(asker_id)
-    topic = q['topics'][0]
     like = len(q['followers'])
     if chat_id in q['followers']:
         text_like = 'شما و '+functions.enToPersianNumb(like-1)+' نفر ♥️'
     else:
         text_like =functions.enToPersianNumb(like) + ' نفر♥️ '
-    if (asker['username'] == '') or not asker['show_username']:
+    if (asker['username'] == ''):
         asker = '/u'+str(asker_id)
     else:
         asker = '/u'+asker['username']
@@ -51,7 +50,7 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
                                      callback_data='deleteQuestion_'+ str(q_id))
          ]]
     keyboard = InlineKeyboardMarkup(buttons)
-    text_message = 'سوال در موضوع {} '.format(topic)+constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker+'\n'+datestr
+    text_message = constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker+'\n'+datestr
     if withans:
         bot.sendMessage(chat_id, text = text_message)
     else:
@@ -243,3 +242,35 @@ def show_questions_asked_by_user(bot, chat_id, u_id, i=0, limit=5, callback = Fa
     else:
         # bot.sendMessage(chat_id, text = last_questions_text)
         bot.sendMessage(chat_id, text = last_questions_text, reply_markup = keyboard)
+
+def show_comming_sessions(bot, chat_id, i=0, edit = False, msg_id = 0):
+    session , count = db.get_comming_sessions(i)
+    if session == False:
+        bot.sendMessage(chat_id= chat_id, text = 'در حال حاضر جلسه ای وجود ندارد')
+        return constants.STATE_MAIN
+    user = db.get_user(session['u_id'])
+    user_name = user['first_name'] +' '+user['last_name']
+    if i+1 == count:
+        next_text ='بعدی'
+        next_call ='notavailable0'
+    else:
+        next_text ='بعدی'
+        next_call ='nextsession_'+str(i+1)+'_'+str(session['u_id'])
+    if (i == 0):
+        before_text = 'قبلی'
+        before_call ='notavailable1'
+    else:
+        before_text = 'قبلی'
+        before_call = 'nextsession_'+str(i-1)+'_'+str(session['u_id'])
+    session_text = 'جلسه با '+ user_name
+    buttons = [[
+        InlineKeyboardButton(text=next_text,
+                             callback_data=next_call),
+        InlineKeyboardButton(text=before_text,
+                             callback_data= before_call)
+         ]]
+    keyboard = InlineKeyboardMarkup(buttons)
+    if edit == False:
+        bot.sendMessage(chat_id= chat_id, text = session_text, reply_markup = keyboard)
+    else:
+        bot.editMessageText(chat_id= chat_id,message_id = msg_id, text = session_text, reply_markup = keyboard)

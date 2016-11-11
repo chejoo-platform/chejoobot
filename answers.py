@@ -2,7 +2,7 @@
 import constants
 import db
 import questions
-import DateConvertor
+from khayyam import JalaliDate
 import functions
 from telegram.ext import ConversationHandler, CallbackQueryHandler
 from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
@@ -13,9 +13,9 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
     ans = answers[i]
     # ans_rank = constants.ANSWER_RANK[i]
     an_id = ans['id']
-    an_date = str(ans['date'].date()).split('-')
-    date = DateConvertor.shamsiDate(int(an_date[0]),int(an_date[1]),int(an_date[2]))
-    date = functions.enToPersianNumb(date)
+    an_date = str(ans['date'].date())
+    date = JalaliDate.strptime(an_date, '%Y-%m-%d')
+    datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     comments = ans['comments']
     comments_number = len(comments)
     writer_id = int(ans['id'].split("-")[2])
@@ -38,7 +38,7 @@ def show_answers(mybot, u_id, q_id, i=0, show = False, msg_id = 0, up_or_down = 
         answer_rank = ['بهترین جواب', 'دومین جواب', 'سومین جواب'][i]
     else:
         answer_rank = functions.enToPersianNumb(i+1)+'اُمین جواب'
-    text = answer_rank +'\n'+ constants.TEXT_ANSWER+'\n'+'🖊 جواب'+ ans['text'] + str('\n\nfrom ')+writer+'\n'+str(date)
+    text = answer_rank +'\n'+ constants.TEXT_ANSWER+'\n'+'🖊 جواب'+ ans['text'] + str('\n\nfrom ')+writer+'\n'+ datestr
     next_data = 'nextanswer_'+str(q_id)+'_'+str(i+1)
     next_text = 'جواب بعد'
     befor_data = 'beforanswer_'+str(q_id)+'_'+str(i-1)
@@ -75,9 +75,9 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
     q_text = question['question']
     q_link = '/q'+ str(question['msg_id'])
     ans = db.get_answer(an_id)
-    an_date = str(ans['date'].date()).split('-')
-    date = DateConvertor.shamsiDate(int(an_date[0]),int(an_date[1]),int(an_date[2]))
-    date = functions.enToPersianNumb(date)
+    an_date = str(ans['date'].date())
+    date = JalaliDate.strptime(an_date, '%Y-%m-%d')
+    datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     comments = ans['comments']
     comments_number = len(comments)
     writer_id = int(an_id.split("-")[2])
@@ -96,7 +96,7 @@ def show_answer(mybot, u_id, q_id, an_id, show = False, msg_id = 0):
         writer = '/u'+str(writer_id)
     else:
         writer = '/u'+writer['username']
-    text = constants.TEXT_QUESTION+'\n'+'🤔سوال: '+ q_text +'\n لینک: '+ q_link+'\n'+constants.TEXT_ANSWER+'\n✏️جواب : '+ ans['text'] + '\n\nfrom '+writer+ '\n'+ date
+    text = constants.TEXT_QUESTION+'\n'+'🤔سوال: '+ q_text +'\n لینک: '+ q_link+'\n'+constants.TEXT_ANSWER+'\n✏️جواب : '+ ans['text'] + '\n\nfrom '+writer+ '\n'+ datestr
     buttons = [[
         InlineKeyboardButton(text=text_upvote+' '+functions.enToPersianNumb(upvotes),\
                              callback_data='up_'+ str(q_id)+'_'+ an_id),
@@ -124,9 +124,9 @@ def show_answers_of_user(mybot, u_id, user_id, i = 0, show = True, msg_id = 0):
     q_text = question['question']
     q_link = '/q'+ str(question['msg_id'])
     # ans = db.get_answer(an_id)
-    an_date = str(ans['date'].date()).split('-')
-    date = DateConvertor.shamsiDate(int(an_date[0]),int(an_date[1]),int(an_date[2]))
-    date = functions.enToPersianNumb(date)
+    an_date = str(ans['date'].date())
+    date = JalaliDate.strptime(an_date, '%Y-%m-%d')
+    datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     comments = ans['comments']
     comments_number = len(comments)
     writer_id = user_id
@@ -145,7 +145,7 @@ def show_answers_of_user(mybot, u_id, user_id, i = 0, show = True, msg_id = 0):
         writer_link = '/u'+str(writer_id)
     else:
         writer_link = '/u'+writer['username']
-    text = 'سوال هایی که {} اخیرا جواب داده:\n'.format(writer['first_name']) +'شماره '+functions.enToPersianNumb(i+1)+'\n'+ constants.TEXT_QUESTION+'\n'+'🤔سوال: '+ q_text +'\n لینک: '+ q_link+'\n'+constants.TEXT_ANSWER+'\n✏️جواب : '+ ans['text'] + '\n\nfrom '+writer_link+ '\n'+ date
+    text = 'سوال هایی که {} اخیرا جواب داده:\n'.format(writer['first_name']) +'شماره '+functions.enToPersianNumb(i+1)+'\n'+ constants.TEXT_QUESTION+'\n'+'🤔سوال: '+ q_text +'\n لینک: '+ q_link+'\n'+constants.TEXT_ANSWER+'\n✏️جواب : '+ ans['text'] + '\n\nfrom '+writer_link+ '\n'+ datestr
     text_next = 'بعدی'
     text_befor = 'قبلی'
     if i==0:

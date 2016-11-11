@@ -5,7 +5,7 @@ import json
 import telegram
 import answers
 import functions
-import DateConvertor
+from khayyam import JalaliDate
 from telegram import ReplyKeyboardMarkup
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, ConversationHandler
@@ -18,9 +18,9 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
     question = q["question"]
     q_link = '/q'+str(q['msg_id'])
     asker_id = q["user_id"]
-    q_date = str(q['date'].date()).split('-')
-    date = DateConvertor.shamsiDate(int(q_date[0]),int(q_date[1]),int(q_date[2]))
-    date = functions.enToPersianNumb(date)
+    q_date = str(q['date'].date())
+    date = JalaliDate.strptime(q_date, '%Y-%m-%d')
+    datestr = functions.enToPersianNumb(date.strftime('%Y/%m/%d'))
     asker = db.get_user(asker_id)
     topic = q['topics'][0]
     like = len(q['followers'])
@@ -52,7 +52,7 @@ def show_question(q_id, chat_id, bot, withans = False, callback = False, msg_id 
                                      callback_data='deleteQuestion_'+ str(q_id))
          ]]
     keyboard = InlineKeyboardMarkup(buttons)
-    text_message = 'سوال در موضوع {} '.format(topic)+constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker+'\n'+date
+    text_message = 'سوال در موضوع {} '.format(topic)+constants.TEXT_QUESTION+'\n'+'🤔 سوال\n   '+question+'؟\n' + '\n لینک سوال: '+ q_link + '\n\nAsked by '+asker+'\n'+datestr
     if withans:
         bot.sendMessage(chat_id, text = text_message)
     else:
